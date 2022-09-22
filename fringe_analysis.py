@@ -8,32 +8,6 @@ def add_crossline(image):
     cv2.line(image, (0, dims[0] // 2), (dims[1], dims[0] // 2),  (0, 0, 255), 1)
     return image
 
-def roi_noedge(image, borderwidth):
-    width, height = image.shape
-    # ROI = x1, y1, width, height
-    # return (borderwidth, borderwidth, height - 2 * borderwidth, width - 2 * borderwidth)  # full without edge
-    return (borderwidth, borderwidth, height - 2 * borderwidth, (width // 2))  # halfway vertical
-    # return (borderwidth, borderwidth, height, width - 2 * borderwidth)  # halfway horizontal
-    # return (borderwidth, borderwidth, (height // 2) - 2 * borderwidth, width - 2 * borderwidth)  # halfway horizontal
-    #     # return (borderwidth, borderwidth, (height // 2) - 2 * borderwidth, (width // 2) - 2 * borderwidth - 100)  # quarter only
-    # return (borderwidth, borderwidth, width - 2 * borderwidth, height - 2 * borderwidth)  # working OLD
-
-def roi_topbar(image, borderwidth):
-    width, height = image.shape
-    return (borderwidth, borderwidth, height - 2 * borderwidth, width // 6)
-
-def roi_leftbar(image, borderwidth):
-    width, height = image.shape
-    return (borderwidth, borderwidth, height // 6, width - 2 * borderwidth)
-
-def roi_lefthalf(image, borderwidth):
-    width, height = image.shape
-    return (borderwidth, borderwidth, height // 2, width - 2 * borderwidth)
-
-def roi_all(image, borderwidth):
-    width, height = image.shape
-    return (borderwidth, borderwidth, height // 2, width - 2 * borderwidth)
-
 def filterFourierManually(image, keep_selection=False, shiftfft=False, blur=False, roi_edge=10, roi_section='tophalf', mask_type='rectangle'):
     im_fft = fftpack.fft2(image)
     if shiftfft:
@@ -52,25 +26,60 @@ def filterFourierManually(image, keep_selection=False, shiftfft=False, blur=Fals
     roi = False
 
     if mask_type == 'rectangle':
-        width, height = image.shape
+        height, width = image.shape
+        # roi = x1, y1, width, height
         if roi_section == "tophalf":
-            roi = (roi_edge, roi_edge, height - 2 * roi_edge, width // 2)
+            roi = (roi_edge, roi_edge, width - 2 * roi_edge, height // 2)
         elif roi_section == 'topbar':
-            roi = (roi_edge, roi_edge, height - 2 * roi_edge, width // 6)
+            roi = (roi_edge, roi_edge, width - 2 * roi_edge, height // 6)
+        elif roi_section == "bottomhalf":
+            roi = (roi_edge, height // 2, width - 2 * roi_edge, height // 2 - roi_edge)
+        elif roi_section == 'bottombar':
+            roi = (width // 6 * 5 + roi_edge, roi_edge, width - 2 * roi_edge, height // 6)
         elif roi_section == 'leftbar':
-            roi = (roi_edge, roi_edge, height // 6, width - 2 * roi_edge)
+            roi = (roi_edge, roi_edge, width // 6, height - 2 * roi_edge)
         elif roi_section == 'lefthalf':
-            roi = (roi_edge, roi_edge, height // 2, width - 2 * roi_edge)
+            roi = (roi_edge, roi_edge, width // 2, height - 2 * roi_edge)
+            # roi = (roi_edge, roi_edge, width // 2 + roi_edge, height - 2 * roi_edge)
+            # roi = (roi_edge, roi_edge, width, height - 2 * roi_edge)
+        elif roi_section == 'rightbar':
+            roi = (roi_edge, height // 6 * 5 + roi_edge, width // 6, height - 2 * roi_edge)
+        elif roi_section == 'righthalf':
+            roi = (roi_edge, roi_edge, width // 2, height - 2 * roi_edge)
         elif roi_section == 'all':
-            roi = (roi_edge, roi_edge, height - 2 * roi_edge, width - 2 * roi_edge)
+            roi = (roi_edge, roi_edge, width - 2 * roi_edge - 1, height - 2 * roi_edge)
         elif roi_section == 'free':
             im_show_2 = add_crossline(np.abs(im_show).astype(np.uint8))
             roi = cv2.selectROI("Select ROI", im_show_2)
+        elif roi_section == 'quarter1':
+            roi = (roi_edge, roi_edge, width // 2, height // 2)
+        elif roi_section == 'quarter2':
+            roi = (roi_edge, height // 2 + roi_edge, width // 2, height // 2)
+        elif roi_section == 'quarter3':
+            roi = (width // 2 + roi_edge, roi_edge, width // 2, height // 2)
+        elif roi_section == 'quarter4':
+            roi = (width // 2 + roi_edge, height // 2 + roi_edge, width // 2, height // 2)
+        elif roi_section == 'sixth1':
+            pass
+        elif roi_section == 'sixth2':
+            pass
+        elif roi_section == 'sixth3':
+            pass
+        elif roi_section == 'sixth4':
+            pass
+        elif roi_section == 'testing':
+            # edge_h = 1
+            # roi = (1, edge_h, width // 2 - 500, height - edge_h)
+
+            edge_w = 2
+            roi = (edge_w, 1, width - 2 * edge_w, height // 3)
+
+
         else:
             Exception('No valid mask type.')
 
-        x1, y1, width, height = roi
-        mask = cv2.rectangle(mask, (x1, y1), (x1 + width, y1 + height), clr, -1)  # thickness of -1 will fill the entire shape
+        x1, y1, height, width = roi
+        mask = cv2.rectangle(mask, (x1, y1), (x1 + height, y1 + width), clr, -1)  # thickness of -1 will fill the entire shape
 
     elif mask_type == 'ellipse':
         radius = min(im_show.shape) // 2 - roi_edge
@@ -81,7 +90,29 @@ def filterFourierManually(image, keep_selection=False, shiftfft=False, blur=Fals
         cv2.ellipse(mask, (cx, cy), axis_length, 0, 0, 360, clr, -1)[0] #(image, center_coordinates, axesLength, angle, startAngle, endAngle, color, thickness)
 
     if blur:
-        mask = cv2.GaussianBlur(mask, (blur, blur), 0)
+        '''
+        Gaussianblur(src, ksize, sigmaX, sigmaY, borderType)
+        ksize	Gaussian kernel size. ksize.height and ksize.width can differ but they both must be positive and odd. 
+                Or, they can be zero's and then they are computed from sigma. 
+        sigmaX	Gaussian kernel standard deviation in X direction.
+        sigmaY	Gaussian kernel standard deviation in Y direction; if sigmaY is zero, it is set to be equal to sigmaX, 
+                if both sigmas are zeros, they are computed from ksize.height and ksize.width, respectively (see 
+                getGaussianKernel for details); to fully control the result regardless of possible future modifications 
+                of all this semantics, it is recommended to specify all of ksize, sigmaX, and sigmaY.
+        borderType	pixel extrapolation method, see BorderTypes.
+                Member name         Value   Description
+                BORDER_CONSTANT     0       iiiiii|abcdefgh|iiiiiii with some specified i. Border is filled with the 
+                                            fixed value, passed as last parameter of the function.
+                BORDER_REPLICATE    1       aaaaaa|abcdefgh|hhhhhhh The pixels from the top and bottom rows, the 
+                                            left-most and right-most columns are replicated to fill the border.
+                BORDER_REFLECT      2       fedcba|abcdefgh|hgfedcb
+                BORDER_REFLECT_101  4       gfedcb|abcdefgh|gfedcba
+                BORDER_TRANSPARENT  5       uvwxyz|abcdefgh|ijklmno
+                BORDER_DEFAULT      4       same as BORDER_REFLECT_101
+                BORDER_ISOLATED     16      do not look outside of ROI      
+                
+        '''
+        mask = cv2.GaussianBlur(mask, (blur, blur), cv2.BORDER_CONSTANT)
     if not keep_selection:
         mask = np.abs(mask - 255)
 

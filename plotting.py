@@ -87,7 +87,7 @@ def plot_imunwrapped(im_unwrapped, config):
     Y = np.arange(0, im_unwrapped.shape[0]) * config.getint("GENERAL", "CONVERSION_FACTOR")
     X, Y = np.meshgrid(X, Y)
     Z = np.flipud(im_unwrapped)
-    levels = np.linspace(Z.min(), Z.max(), 25)
+    levels = np.linspace(Z.min(), Z.max(), config.getint("PLOTTING", "PLOT_SURFACE_FLAT_LEVELS"))
     cax = ax.contourf(X, Y, Z, levels=levels)
 
     # cax = ax.imshow(im_unwrapped, cmap=cm.viridis, extent=[0, im_unwrapped.shape[1], 0, im_unwrapped.shape[0]] * config.getint("GENERAL", "CONVERSION_FACTOR"))
@@ -103,6 +103,10 @@ def plot_imwrapped(im_wrapped, config):
     cax = ax.imshow(im_wrapped, cmap='gray', extent=[0, im_wrapped.shape[1], 0, im_wrapped.shape[0]] * config.getint("GENERAL", "CONVERSION_FACTOR"))
     ax.set_xlabel('[um]')
     ax.set_ylabel('[um]')
+    title = f"{config['FOURIER_ADVANCED']['ROI_EDGE']=},{config['FOURIER_ADVANCED']['BLUR']=}"
+    if config.getboolean("FOURIER_ADVANCED", "SECOND_FILTER"):
+        title = title + (f"\n {config['FOURIER_ADVANCED']['ROI_EDGE_2']=},{config['FOURIER_ADVANCED']['BLUR_2']=}")
+    ax.set_title(title)
     fig.colorbar(cax, pad=0.1, label='Units of pi', shrink=0.5)
     fig.tight_layout()
     return fig
