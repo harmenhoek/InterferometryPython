@@ -12,6 +12,11 @@ import time
 from configparser import ConfigParser
 import logging
 from plotting import plot_process, plot_surface, plot_imwrapped, plot_imunwrapped
+import json
+import git
+
+__author__ = 'Harmen Hoek'
+__version__ = '0.1'
 
 def TimeRemaining(arraytimes, left):
     avgtime = statistics.mean(arraytimes)
@@ -38,27 +43,22 @@ def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     # initialize the dimensions of the image to be resized and grab the image size
     dim = None
     (h, w) = image.shape[:2]
-
     # if both the width and height are None, then return the original image
     if width is None and height is None:
         return image
-
     # check to see if the width is None
     if width is None:
         # calculate the ratio of the height and construct the dimensions
         r = height / float(h)
         dim = (int(w * r), height)
-
     # otherwise, the height is None
     else:
         # calculate the ratio of the width and construct the dimensions
         r = width / float(w)
         dim = (width, int(h * r))
-
     logging.debug(f"Image ({w} x {h}) resized to ({dim[0]} x {dim[1]}.)")
     # resize the image
     resized = cv2.resize(image, dim, interpolation=inter)
-
     # return the resized image
     return resized
 
@@ -113,9 +113,6 @@ def check_outputfolder(foldername):
 
     return os.path.abspath(foldername), proc
 
-def determine_conversionfactor():
-    pass
-
 def image_preprocessing(imagepath):
     im_raw = cv2.imread(imagepath)
     if config.get("IMAGE_PROCESSING", "IMAGE_ROTATE") != 'False':
@@ -164,34 +161,70 @@ def setfouriersettings(config):
             config["FOURIER_ADVANCED"]["MASK_TYPE_2"] = 'ellipse'
         else:
             config["FOURIER_ADVANCED"]["SECOND_FILTER"] = False
+    else:
+        logging.warning('Advanced fourier mode is active, highpass and lowpass filter settings are NOT used.')
 
 
-def verify_settings(config):
-    pass
+def verify_settings(config, stats):
+    # plotting on, while more than 1 image
+    if len(stats['inputImages']) > 1 and config.getboolean("PLOTTING", "SHOW_PLOTS"):
+        logging.warning(f"There are {len(stats['inputImages'])} images to be analyzed and SHOW_PLOTS is True.")
+        # TODO prompt with timeout?
+
+    # wavelength should be in nm
+    if config.getfloat('GENERAL', 'WAVELENGTH') < 1:
+        logging.error('WAVELENGTH should be set in nm, not meters (number is too small).')
+        return False
+
+    return True
+
+
+def conversion_factors(config):
+    units = ['nm', 'um', 'mm', 'm']
+    conversionsXY = [1e6, 1e3, 1, 1e-3]  # standard unit is um
+    conversionsZ = [1, 1e-3, 1e-6, 1e-9]  # standard unit is nm
+
+    # Determine XY conversion factor and unit
+    try:
+        conversionFactorXY = config.getfloat('LENS_PRESETS', config.get('GENERAL', 'LENS_PRESET'))
+        logging.info(f"Lens preset '{config.getfloat('LENS_PRESETS', config.get('GENERAL', 'LENS_PRESET'))}' is used.")
+    except ValueError:
+        logging.error(f"The set lens preset '{config.get('GENERAL', 'LENS_PRESET')}' is not in LENS_PRESETS.")
+
+    unitXY = config.get('GENERAL', 'UNIT_XY')
+    if unitXY not in units:
+        raise ValueError(f"Desired unit {unitXY} is not valid. Choose, nm, um, mm or m.")
+    conversionFactorXY = 1 / conversionFactorXY * conversionsXY[units.index(unitXY)]  # apply unit conversion
+
+    # Determine Z conversion factor and unit
+    unitZ = config.get('GENERAL', 'UNIT_Z')
+    if unitZ == 'pi':
+        conversionFactorZ = 1
+    else:
+        conversionFactorZ = (config.getfloat('GENERAL', 'WAVELENGTH')) / (4 * config.getfloat('GENERAL', 'REFRACTIVE_INDEX'))  # 1 pi = lambda / (4n). this is conversion factor in pi --> m
+        if unitZ not in units:
+            raise ValueError(f"Desired unit {unitZ} is not valid. Choose, nm, um, mm or m.")
+        conversionFactorZ = conversionFactorZ * conversionsZ[units.index(unitZ)]  # apply unit conversion
+
+    return conversionFactorXY, conversionFactorZ, unitXY, unitZ
+
 
 logging.basicConfig(level=logging.INFO, format= '[%(asctime)s] {%(lineno)d} %(levelname)s - %(message)s', datefmt='%H:%M:%S')  # CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
 logging.info('Code started')
-
-__author__ = 'Harmen Hoek'
-__version__ = '0'
 logging.info(f'Author: {__author__}, version: {__version__}.')
 start_main = time.time()
-
-
-# SOURCE = r'C:\Users\HOEKHJ\surfdrive\Polymerbrush_Spreading\HTK_openair_20220425\HTK_openair_20220425_raw_selection'
-# SOURCE = r'C:\Users\HOEKHJ\surfdrive\Polymerbrush_Spreading\HTK_openair_20220425\HTK_openair_20220425_raw_selection\HTK_openair_20220425-04252022173701-1.tiff'
-# SOURCE = r'C:\Users\HOEKHJ\surfdrive\Polymerbrush_Spreading\HTK_openair_20220425\HTK_openair_20220425_raw_selection\HTK_openair_20220425-04262022145446-502.tiff'
-# SOURCE = 'images/1-04222022065406-72.tiff'
+stats = {}  # save statistics of this analysis
 
 config = ConfigParser()
 config.read("config.ini")
 
+
 SaveFolder, Proc = check_outputfolder(config.get("SAVING", "SAVEFOLDER"))
 logging.info(f'Save folder created: {SaveFolder}. Process id: {Proc}.')
 if config.getboolean("GENERAL", "SAVE_SETTINGS_TXT"):
+    stats['configPath'] = os.path.join(SaveFolder, f'config_{Proc}.ini' )
     with open(os.path.join(SaveFolder, f'config_{Proc}.ini'), 'w') as configfile:
         config.write(configfile)
-
 
 inputImages, inputFolder, inputImagesFullPath = list_images(config.get("GENERAL", "SOURCE"))
 if config.getboolean("GENERAL", "TIMESTAMPS_FROMFILENAME"):
@@ -199,13 +232,34 @@ if config.getboolean("GENERAL", "TIMESTAMPS_FROMFILENAME"):
     deltatime = timestamps_to_deltat(timestamps)
     logging.info("Timestamps read from filenames. Deltatime calculated based on timestamps.")
 else:
-    timestaps = None
+    timestamps = None
     deltatime = np.arange(0, len(inputImages)) * config.getfloat("GENERAL", "INPUT_FPS")
     logging.info("Deltatime calculated based on fps.")
 
 setfouriersettings(config)
-if config.getboolean('FOURIER_ADVANCED', 'ADVANCED_MODE'):
-    logging.warning('Advanced fourier mode is active, highpass and lowpass filter settings are NOT used.')
+conversionFactorXY, conversionFactorZ, unitXY, unitZ = conversion_factors(config)
+
+stats['About'] = {}
+stats['About']['__author__'] = __author__
+stats['About']['__version__'] = __version__
+stats['About']['repo'] = str(git.Repo(search_parent_directories=True))
+stats['About']['sha'] = git.Repo(search_parent_directories=True).head.object.hexsha
+stats['startDateTime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f %z')
+stats['SaveFolder'] = SaveFolder
+stats['Proc'] = Proc
+stats['inputFolder'] = inputFolder
+stats['inputImages'] = inputImages
+stats['inputImagesFullPath'] = inputImagesFullPath
+stats['timestamps'] = timestamps
+stats['deltatime'] = list(deltatime)
+stats['conversionFactorXY'] = conversionFactorXY
+stats['conversionFactorZ'] = conversionFactorZ
+stats['unitXY'] = unitXY
+stats['unitZ'] = unitZ
+stats['analysis'] = {}
+
+if not verify_settings(config, stats):
+    exit()
 
 timetracker = []
 for idx, inputImage in enumerate(inputImages):
@@ -241,35 +295,7 @@ for idx, inputImage in enumerate(inputImages):
 
 
     im_wrapped = np.arctan2(im_filtered.imag, im_filtered.real)
-    # im_wrapped = np.abs(im_wrapped)
-    # im_unwrapped = unwrap_phase(im_wrapped, wrap_around=(True, True))
-    # im_unwrapped = np.interp(im_unwrapped, (im_unwrapped.min(), im_unwrapped.max()), (-np.pi, np.pi))
     im_unwrapped = unwrap_phase(im_wrapped)
-
-    def remove_steps(image, axis=1):
-        if axis == 1:
-            for row in image:
-                for idx in range(len(row)-1):
-                    if np.abs(row[idx] - row[idx+1]) > 15:  # step
-                        row[idx+1:] = row[idx+1:] + (row[idx] - row[idx+1])
-        else:
-            for i_col in range(image.shape[1]):
-                col = image[:, i_col]
-                for idx in range(len(col)-1):
-                    if np.abs(col[idx] - col[idx+1]) > 15:  # step
-                        col[idx+1:] = col[idx+1:] + (col[idx] - col[idx+1])
-        return image
-
-    # def remove_steps_1d(row):
-    #     for idx in range(len(row) - 1):
-    #         print(f"step={np.abs(row[idx] - row[idx + 1])}, {idx=}")
-    #         if np.abs(row[idx] - row[idx + 1]) > 15:  # step
-    #             row[idx + 1:] = row[idx + 1:] + (row[idx] - row[idx + 1])
-    #     return row
-
-    #
-    # im_unwrapped = remove_steps(im_unwrapped)
-    # im_unwrapped = remove_steps(im_unwrapped, axis=2)
 
 
     logging.info(f"{idx + 1}/{len(inputImages)} - Image wrapped and unwrapped.")
@@ -278,57 +304,19 @@ for idx, inputImage in enumerate(inputImages):
         im_unwrapped = -im_unwrapped + np.max(im_unwrapped)
         logging.debug('Image surface flipped.')
 
-    if config.getint("GENERAL", "CONVERSION_FACTOR"):
-        im_unwrapped = im_unwrapped * config.getint("GENERAL", "CONVERSION_FACTOR")
-        logging.debug('Conversion factor applied.')
-
-    #
-    # im2 = np.divide(im_filtered.imag, im_filtered.real)
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
-    # cax = ax.imshow(im2, cmap='gray')
-    # fig.colorbar(cax, pad=0.1, label='', shrink=0.5)
-    #
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
-    # cax = ax.imshow(im_filtered.imag, cmap='gray')
-    # ax.set_title('imag')
-    # fig.colorbar(cax, pad=0.1, label='', shrink=0.5)
-    #
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
-    # cax = ax.imshow(im_filtered.real, cmap='gray')
-    # ax.set_title('real')
-    # fig.colorbar(cax, pad=0.1, label='', shrink=0.5)
-    #
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
-    # cax = ax.imshow(np.arctan(im_filtered.imag, im_filtered.real), cmap='gray')
-    # ax.set_title('arctan1')
-    # fig.colorbar(cax, pad=0.1, label='', shrink=0.5)
-    #
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
-    # cax = ax.imshow(im_wrapped, cmap='gray')
-    # ax.set_title('arctan2')
-    # fig.colorbar(cax, pad=0.1, label='', shrink=0.5)
-    #
-    # plt.show()
-    #
-    # exit()
+    im_unwrapped = im_unwrapped * conversionFactorZ
+    logging.debug('Conversion factor for Z applied.')
 
     # Plotting
     fig1 = plot_process(im_fft, im_fft_filtered, im_gray, im_filtered, im_wrapped, im_unwrapped, roi)
-    # fig2 = plot_surface(im_unwrapped, config, overlay_image=np.flipud(im_raw/255))
-    fig2 = plot_surface(im_unwrapped, config)
-    fig3 = plot_imwrapped(im_wrapped, config)
-    fig4 = plot_imunwrapped(im_unwrapped, config)
+    fig2 = plot_surface(im_unwrapped, config, conversionFactorXY, unitXY, unitZ)
+    fig3 = plot_imwrapped(im_wrapped, config, conversionFactorXY, unitXY)
+    fig4 = plot_imunwrapped(im_unwrapped, config, conversionFactorXY, unitXY, unitZ)
     logging.info(f"{idx + 1}/{len(inputImages)} - Plotting done.")
 
 
-
     # Saving
-    savename = f'{os.path.splitext(os.path.basename(imagePath))[0]}_{config.getint("FOURIER_ADVANCED", "BLUR")}_{config.getint("FOURIER_ADVANCED", "ROI_EDGE")}_{config.getboolean("FOURIER_ADVANCED", "SHIFTFFT")},{config.getboolean("FOURIER_ADVANCED", "KEEP_SELECTION")}'
+    savename = f'{os.path.splitext(os.path.basename(imagePath))[0]}_analyzed_'
 
     if config.getboolean("SAVING", "SAVE_PNG"):
         fig1.savefig(os.path.join(SaveFolder, f"process_{savename}.png"), dpi=config.getint("SAVING", "SAVE_SETDPI"))
@@ -343,6 +331,21 @@ for idx, inputImage in enumerate(inputImages):
         fig4.savefig(os.path.join(SaveFolder, f"unwrapped_{savename}.pdf"), dpi=config.getint("SAVING", "SAVE_SETDPI"))
         logging.debug('PDF saving done.')
     logging.info(f"{idx + 1}/{len(inputImages)} - Plotting and saving done.")
+
+    # Save unwrapped image = main result
+    wrappedPath = False
+    if config.getboolean("SAVING", "SAVE_UNWRAPPED_RAW"):
+        wrappedPath = os.path.join(SaveFolder, f"{savename}_unwrapped.npy")
+        with open(os.path.join(SaveFolder, f"{savename}_unwrapped.npy"), 'wb') as f:
+            np.save(f, im_unwrapped)
+        logging.info(f'Saved unwrapped image to file with filename {wrappedPath}')
+
+    stats['analysis'][idx] = {}
+    stats['analysis'][idx]['imagePath'] = imagePath
+    stats['analysis'][idx]['savename'] = savename
+    stats['analysis'][idx]['wrappedPath'] = wrappedPath
+    stats['analysis'][idx]['timeElapsed'] = time.time() - start
+
     if config.getboolean("PLOTTING", "SHOW_PLOTS"):
         plt.show()
 
@@ -352,5 +355,9 @@ for idx, inputImage in enumerate(inputImages):
     TimeRemaining(timetracker, len(inputImages) - idx)  # estimate remaining time based on average time per iteration and iterations left
     logging.info(f"{idx + 1}/{len(inputImages)} - Finished analyzing image.")
 
+stats['analysisTimeElapsed'] = time.time() - start_main
+# Save statistics
+with open(os.path.join(SaveFolder, f"{Proc}_statistics.json"), 'w') as f:
+    json.dump(stats, f, indent=4)
 
-logging.info(f"Code finished in {time.time() - start}s.")
+logging.info(f"Code finished in {round(time.time() - start_main)} seconds.")

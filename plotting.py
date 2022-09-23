@@ -42,18 +42,15 @@ def rebin(ndarray, new_shape, operation='average'):
             ndarray = ndarray.mean(-1 * (i + 1))
     return ndarray
 
-def plot_surface(im_unwrapped, config, overlay_image=np.empty(0)):
-    X = np.arange(0, im_unwrapped.shape[1]) * config.getint("GENERAL", "CONVERSION_FACTOR")
-    Y = np.arange(0, im_unwrapped.shape[0]) * config.getint("GENERAL", "CONVERSION_FACTOR")
+def plot_surface(im_unwrapped, config, conversionFactorXY, unitXY, unitZ, overlay_image=np.empty(0)):
+    X = np.arange(0, im_unwrapped.shape[1]) * conversionFactorXY
+    Y = np.arange(0, im_unwrapped.shape[0]) * conversionFactorXY
     X, Y = np.meshgrid(X, Y)
     Z = np.flipud(im_unwrapped)
 
     simplify = None
     if simplify:
         new_shape = (X.shape[0] // simplify, X.shape[1] // simplify)
-        print(new_shape)
-        print(X.shape, X.size)
-        print(type(X), type(Y), type(Z))
         X = rebin(X, new_shape)
         Y = rebin(Y, new_shape)
         Z = rebin(Z, new_shape)
@@ -70,39 +67,39 @@ def plot_surface(im_unwrapped, config, overlay_image=np.empty(0)):
     if config.getboolean("PLOTTING", "PLOT_SURFACE_EXTRASMOOTH"):
         cax.set_rcount = 200
         cax.set_ccount = 200
-    ax.set_box_aspect((np.ptp(X), np.ptp(Y), np.ptp(im_unwrapped) * config.getint("PLOTTING", "PLOT_SURFACE_SCALEZ")))
-    fig.colorbar(cax, pad=0.1, label='[um]', shrink=0.5)
-    ax.set_xlabel('[um]')
-    ax.set_ylabel('[um]')
-    ax.set_ylabel('[um]')
+    # ax.set_box_aspect((np.ptp(X), np.ptp(Y), np.ptp(im_unwrapped) * config.getint("PLOTTING", "PLOT_SURFACE_SCALEZ")))
+    fig.colorbar(cax, pad=0.1, label=f'[{unitZ}]', shrink=0.5)
+    ax.set_xlabel(f'[{unitXY}]')
+    ax.set_ylabel(f'[{unitXY}]')
+    ax.set_ylabel(f'[{unitXY}]')
     fig.tight_layout()
 
     return fig
 
-def plot_imunwrapped(im_unwrapped, config):
+def plot_imunwrapped(im_unwrapped, config, conversionFactorXY, unitXY, unitZ):
     fig = plt.figure(figsize=(8, 5))
     ax = fig.add_subplot(111)
 
-    X = np.arange(0, im_unwrapped.shape[1]) * config.getint("GENERAL", "CONVERSION_FACTOR")
-    Y = np.arange(0, im_unwrapped.shape[0]) * config.getint("GENERAL", "CONVERSION_FACTOR")
+    X = np.arange(0, im_unwrapped.shape[1]) * conversionFactorXY
+    Y = np.arange(0, im_unwrapped.shape[0]) * conversionFactorXY
     X, Y = np.meshgrid(X, Y)
     Z = np.flipud(im_unwrapped)
     levels = np.linspace(Z.min(), Z.max(), config.getint("PLOTTING", "PLOT_SURFACE_FLAT_LEVELS"))
     cax = ax.contourf(X, Y, Z, levels=levels)
 
     # cax = ax.imshow(im_unwrapped, cmap=cm.viridis, extent=[0, im_unwrapped.shape[1], 0, im_unwrapped.shape[0]] * config.getint("GENERAL", "CONVERSION_FACTOR"))
-    ax.set_xlabel('[um]')
-    ax.set_ylabel('[um]')
-    fig.colorbar(cax, pad=0.1, label='[um]', shrink=0.5)
+    ax.set_xlabel(f'[{unitXY}]')
+    ax.set_ylabel(f'[{unitXY}]')
+    fig.colorbar(cax, pad=0.1, label=f'[{unitZ}]', shrink=0.5)
     fig.tight_layout()
     return fig
 
-def plot_imwrapped(im_wrapped, config):
+def plot_imwrapped(im_wrapped, config, conversionFactorXY, unitXY):
     fig = plt.figure(figsize=(8, 5))
     ax = fig.add_subplot(111)
-    cax = ax.imshow(im_wrapped, cmap='gray', extent=[0, im_wrapped.shape[1], 0, im_wrapped.shape[0]] * config.getint("GENERAL", "CONVERSION_FACTOR"))
-    ax.set_xlabel('[um]')
-    ax.set_ylabel('[um]')
+    cax = ax.imshow(im_wrapped, cmap='gray', extent=np.array([0, im_wrapped.shape[1], 0, im_wrapped.shape[0]]) * conversionFactorXY)
+    ax.set_xlabel(f'[{unitXY}]')
+    ax.set_ylabel(f'[{unitXY}]')
     title = f"{config['FOURIER_ADVANCED']['ROI_EDGE']=},{config['FOURIER_ADVANCED']['BLUR']=}"
     if config.getboolean("FOURIER_ADVANCED", "SECOND_FILTER"):
         title = title + (f"\n {config['FOURIER_ADVANCED']['ROI_EDGE_2']=},{config['FOURIER_ADVANCED']['BLUR_2']=}")
