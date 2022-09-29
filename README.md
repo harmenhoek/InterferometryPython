@@ -1,5 +1,4 @@
 # InterferometryPython
-<hr>
 
 A Python program for analyzing single wavelength interferometry images based on fringe detection using Fourier space frequency filtering to obtain 1D or 2D height profiles.
  
@@ -7,7 +6,6 @@ Documentation for version 0.3 (not fully tested yet) \
 Documentation last updated: 2022-09-29
 
 ## Getting started
-<hr>
 
 To get started, install all the packages from `requirements.txt`:
 ```
@@ -19,7 +17,6 @@ python main.py
 ```
 
 ## Input & output
-<hr>
 
 Input:
 - One or more images of interferometry patterns. Images need to be recorded at single wavelength. Images need to be of format: .png, .jpeg, .jpg, .tiff or .bmp.
@@ -32,7 +29,6 @@ Output:
 - A 1D or 2D unwrapped height profile
 
 ## How it works
-<hr>
 
 There are 2 analysis methods. The **line method** analyses 1D image slices to create a height profile, the **surface method** analyses the full 2d images to create a full surface map.
 
@@ -69,7 +65,6 @@ Neither method works for:
 - Fringes running in more than 2 directions, i.e. fringes in just x and y work, but also including diagonal fringes makes simple global filtering difficult. Ideally you'd need spatial dependent frequency filtering for these cases. Consider splitting the image into several simpler patterns to overcome this problem.
 
 ## Screenshots
-<hr>
 
 Examples of the line method and surface method are shown in the images below.
 
@@ -77,7 +72,6 @@ Examples of the line method and surface method are shown in the images below.
 ![Example of the surface method.](screenshots/surface_method_example.jpeg?raw=true "Example of the surface method.")
 
 ## Troubleshooting
-<hr>
 
 ### [surface_method] Discontinuities in surface plots
 Consider splitting the interferometery image up into several smaller images.\
@@ -86,7 +80,6 @@ When fringes run in more than 2 directions, i.e. they do not only have run in x 
 ![Example limitation of global 2 directional frequency filtering.](screenshots/frequency_filtering_limitation.jpeg?raw=true "Example limitation of global 2 directional frequency filtering.")
 
 ## License
-<hr>
 MIT License
 
 Copyright (c) 2022 harmenhoek
