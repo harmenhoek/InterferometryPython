@@ -71,7 +71,6 @@ def plot_surface(im_unwrapped, config, conversionFactorXY, unitXY, unitZ, overla
     fig.colorbar(cax, pad=0.1, label=f'[{unitZ}]', shrink=0.5)
     ax.set_xlabel(f'[{unitXY}]')
     ax.set_ylabel(f'[{unitXY}]')
-    ax.set_ylabel(f'[{unitXY}]')
     fig.tight_layout()
 
     return fig
@@ -105,5 +104,50 @@ def plot_imwrapped(im_wrapped, config, conversionFactorXY, unitXY):
         title = title + (f"\n {config['FOURIER_ADVANCED']['ROI_EDGE_2']=},{config['FOURIER_ADVANCED']['BLUR_2']=}")
     ax.set_title(title)
     fig.colorbar(cax, pad=0.1, label='Units of pi', shrink=0.5)
+    fig.tight_layout()
+    return fig
+
+def plot_profiles(config, profiles):
+    fig = plt.figure(figsize=(8, 5))
+    ax = fig.add_subplot(111)
+    for profile in profiles:
+        ax.plot(profile, label='raw')
+    fig.tight_layout()
+    return fig
+
+def plot_lineprocess(config, profile, profile_filtered, wrapped, unwrapped):
+    fig = plt.figure(figsize=(8, 5))
+    ax = fig.add_subplot(111)
+    ax.plot(profile, label='raw')
+    ax.plot(np.abs(profile_filtered), label='abs')
+    ax.plot(profile_filtered.imag, label='imag')
+    ax.plot(profile_filtered.real, label='real')
+    ax.plot(wrapped, label='wrapped')
+    ax.plot(unwrapped, label='unwrapped')
+    ax.set_xlabel('Lateral distance [pixels]')
+    ax.set_ylabel('Units of pi')
+    # ax.plot(profile_filtered, label='')
+    ax.legend()
+    fig.tight_layout()
+    return fig
+
+def plot_sliceoverlay(config, coordinates, image):
+    fig = plt.figure(figsize=(8, 5))
+    plt.imshow(image)
+    colors = plt.cm.viridis(np.linspace(0, 1, len(coordinates)))
+    for idx, coordinates in coordinates.items():
+        x, y = zip(*coordinates)
+        plt.plot([x[0], x[-1]], [y[0], y[-1]], color=colors[idx])
+    plt.title(f'All {idx+1} profile slices')
+    fig.tight_layout()
+    return fig
+
+def plot_unwrappedslice(config, unwrapped_object, profiles, conversionFactorXY, unitXY, unitZ):
+    fig = plt.figure(figsize=(8, 5))
+    ax = fig.add_subplot(111)
+    ax.imshow(profiles, cmap='gray', extent=np.array([0, conversionFactorXY*len(unwrapped_object), 0, np.max(unwrapped_object)]), aspect='auto')
+    ax.plot(np.linspace(0, conversionFactorXY*len(unwrapped_object), len(unwrapped_object)), unwrapped_object, label='unwrapped')
+    ax.set_xlabel(f'[{unitXY}]')
+    ax.set_ylabel(f'[{unitZ}]')
     fig.tight_layout()
     return fig

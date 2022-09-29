@@ -1,0 +1,5 @@
+- iteration part idx is embedded in functions now, remove idx from funcs
+- move funcs to different files. method_line and method_surface
+- logging in method_line
+- saving method_line
+- stats for method_line
