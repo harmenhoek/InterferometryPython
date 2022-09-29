@@ -64,7 +64,7 @@ def plot_surface(im_unwrapped, config, conversionFactorXY, unitXY, unitZ, overla
     else:
         cax = ax.plot_surface(X, Y, Z, cmap=cm.viridis, linewidth=0, antialiased=False)
 
-    if config.getboolean("PLOTTING", "PLOT_SURFACE_EXTRASMOOTH"):
+    if config.getboolean("PLOTTING", "PLOT_SURFACEMETHOD_SURFACE_EXTRASMOOTH"):
         cax.set_rcount = 200
         cax.set_ccount = 200
     # ax.set_box_aspect((np.ptp(X), np.ptp(Y), np.ptp(im_unwrapped) * config.getint("PLOTTING", "PLOT_SURFACE_SCALEZ")))
@@ -83,7 +83,7 @@ def plot_imunwrapped(im_unwrapped, config, conversionFactorXY, unitXY, unitZ):
     Y = np.arange(0, im_unwrapped.shape[0]) * conversionFactorXY
     X, Y = np.meshgrid(X, Y)
     Z = np.flipud(im_unwrapped)
-    levels = np.linspace(Z.min(), Z.max(), config.getint("PLOTTING", "PLOT_SURFACE_FLAT_LEVELS"))
+    levels = np.linspace(Z.min(), Z.max(), config.getint("PLOTTING", "PLOT_SURFACEMETHOD_UNWRAPPED_FLAT_LEVELS"))
     cax = ax.contourf(X, Y, Z, levels=levels)
 
     # cax = ax.imshow(im_unwrapped, cmap=cm.viridis, extent=[0, im_unwrapped.shape[1], 0, im_unwrapped.shape[0]] * config.getint("GENERAL", "CONVERSION_FACTOR"))
@@ -99,9 +99,9 @@ def plot_imwrapped(im_wrapped, config, conversionFactorXY, unitXY):
     cax = ax.imshow(im_wrapped, cmap='gray', extent=np.array([0, im_wrapped.shape[1], 0, im_wrapped.shape[0]]) * conversionFactorXY)
     ax.set_xlabel(f'[{unitXY}]')
     ax.set_ylabel(f'[{unitXY}]')
-    title = f"{config['FOURIER_ADVANCED']['ROI_EDGE']=},{config['FOURIER_ADVANCED']['BLUR']=}"
-    if config.getboolean("FOURIER_ADVANCED", "SECOND_FILTER"):
-        title = title + (f"\n {config['FOURIER_ADVANCED']['ROI_EDGE_2']=},{config['FOURIER_ADVANCED']['BLUR_2']=}")
+    title = f"{config['SURFACE_METHOD_ADVANCED']['ROI_EDGE']=},{config['SURFACE_METHOD_ADVANCED']['BLUR']=}"
+    if config.getboolean("SURFACE_METHOD_ADVANCED", "SECOND_FILTER"):
+        title = title + (f"\n {config['SURFACE_METHOD_ADVANCED']['ROI_EDGE_2']=},{config['SURFACE_METHOD_ADVANCED']['BLUR_2']=}")
     ax.set_title(title)
     fig.colorbar(cax, pad=0.1, label='Units of pi', shrink=0.5)
     fig.tight_layout()
