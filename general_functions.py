@@ -132,11 +132,11 @@ def image_preprocessing(config, imagepath):
         import imutils
         im_raw = imutils.rotate(im_raw, angle=config.getint("IMAGE_PROCESSING", "IMAGE_ROTATE"))
         logging.debug('Image rotated.')
-    if config.get("IMAGE_PROCESSING", "IMAGE_RESIZE") is not 'False':
+    if config.get("IMAGE_PROCESSING", "IMAGE_RESIZE") != 'False':
         im_raw = image_resize_percentage(im_raw, config.getint("IMAGE_PROCESSING", "IMAGE_RESIZE"))
         logging.debug('Image resized.')
     im_gray = cv2.cvtColor(im_raw, cv2.COLOR_BGR2GRAY)
-    if config.get("IMAGE_PROCESSING", "IMAGE_CROP") is not 'False':
+    if config.get("IMAGE_PROCESSING", "IMAGE_CROP") != 'False':
         crop = [int(e.strip()) for e in config.get('IMAGE_PROCESSING', 'IMAGE_CROP').split(',')]
         im_gray = im_gray[crop[0]:-crop[2], crop[3]:-crop[1]]
         logging.debug(f'Image cropped. Pixels removed from edges: {crop}.')

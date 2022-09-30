@@ -3,8 +3,54 @@ from scipy import spatial
 import cv2
 import logging
 import os
-from matplotlib import pyplot as plt
+from general_functions import image_resize
 
+def intersection_imageedge(a, b, limits):
+    top, bot, left, right = False, False, False, False
+    w, h = limits[1], limits[3]
+    if -b / a >= 0 and -b / a <= w:
+        bot = True
+    if (h - b) / a >= 0 and (h - b) / a <= w:
+        top = True
+    if b >= 0 and b <= h:
+        left = True
+    if (a * w) + b >= 0 and (a * w) + b <= h:
+        right = True
+    # print( top, bot, left, right)
+    if top + bot + left + right != 2:
+        logging.error("The profile should always intersect 2 image edges.")
+        exit()
+
+    if top & bot:  # case 1
+        # l = imageheight / sin(theta), where theta = atan(a)
+        # == > l = (sqrt(a ^ 2 + 1) * imageheight) / a
+        l = np.round((np.sqrt(a ** 2 + 1) * h) / a)  # l = profile length (density=1px)
+    if left & right:  # case 2
+        # l = imagewidth / cos(theta), where theta=atan(a)
+        # ==> l = sqrt(a^2+1)*imagewidth
+        l = np.round(np.sqrt(a ** 2 + 1) * w)  # l = profile length (density=1px)
+    if left & top:  # case 3
+        # dx = x(y=h), dy = h-y(x=0) --> l = sqrt(dx^2+dy^2)
+        dx = (h - b) / a
+        dy = h - b
+        l = np.sqrt(dx**2 + dy**2)
+    if top & right:  # case 4
+        # dx = w-x(y=h), dy = h-y(x=0) --> l = sqrt(dx^2+dy^2)
+        dx = w - ((h - b) / a)
+        dy = h - b
+        l = np.sqrt(dx ** 2 + dy ** 2)
+    if bot & right:  # case 5
+        # dx = w-x(y=h), dy = y(x=0) --> l = sqrt(dx^2+dy^2)
+        dx = w - ((h - b) / a)
+        dy = b
+        l = np.sqrt(dx ** 2 + dy ** 2)
+    if bot & left:  # case 6
+        # dx = x(y=h), dy = y(x=0) --> l = sqrt(dx^2+dy^2)
+        dx = (h - b) / a
+        dy = b
+        l = np.sqrt(dx ** 2 + dy ** 2)
+
+    return np.abs(l), (top, bot, left, right)
 
 def coordinates_on_line(a, b, limits):
     '''
@@ -18,13 +64,20 @@ def coordinates_on_line(a, b, limits):
     :return: zipped list of (x, y) coordinates on this line
     '''
 
-    x = np.arange(limits[0], limits[1])  # create x coordinates
-    y = (a * x + b).astype(int)  # calculate corresponding y coordinates based on y=ax+b
+    l, _ = intersection_imageedge(a, b, limits)
+
+    # generate x coordinates, keep as floats
+    x = np.linspace(limits[0], limits[1]-1, int(l))
+
+    # calculate corresponding y coordinates based on y=ax+b, keep as floats
+    y = (a * x + b)
+
     # filtering is only needed for y, since x is by definition in the limits
     x = np.delete(x, (np.where((y < limits[2]) | (y >= limits[3]))))  # filter x where y is out of bound
     y = np.delete(y, (np.where((y < limits[2]) | (y >= limits[3]))))  # filter y where y is out of bound
-    # return a zipped list of coordinates
-    return list(zip(x, y))
+
+    # return a zipped list of coordinates, thus integers
+    return list(zip(x.astype(int), y.astype(int)))
 
 
 def align_arrays(all_coordinates, data, alignment_coordinate):
@@ -124,12 +177,14 @@ def method_line(config, **kwargs):
 
     # get the points for the center linear slice
     if config.getboolean("LINE_METHOD", "SELECT_POINTS"):
-        cv2.imshow('image', im_gray)
+        im_temp = image_resize(im_gray, height=800)
+        resize_factor = 800 / im_gray.shape[0]
+        cv2.imshow('image', im_temp)
         cv2.setMouseCallback('image', click_event)
         cv2.waitKey(0)
         global right_clicks
-        P1 = right_clicks[0]
-        P2 = right_clicks[1]
+        P1 = np.array(right_clicks[0]) / resize_factor
+        P2 = np.array(right_clicks[1]) / resize_factor
         logging.info(f"Selected coordinates: {P1=}, {P2=}.")
     else:
         # get from config file if preferred
@@ -144,6 +199,7 @@ def method_line(config, **kwargs):
     x_coords, y_coords = zip(*[P1, P2])  # unzip coordinates to x and y
     a = (y_coords[1]-y_coords[0])/(x_coords[1]-x_coords[0])
     b = y_coords[0] - a * x_coords[0]
+    logging.info(f"The selected slice has the formula: y={a}x+{b}.")
 
     profiles = {}  # empty dict for profiles. profiles are of different sizes of not perfectly hor or vert
     # empty dict for all coordinates on all the slices, like:
