@@ -6,8 +6,26 @@ import os
 from general_functions import image_resize
 
 def intersection_imageedge(a, b, limits):
+    '''
+    For a given image dimension (limits) and linear line (y=ax+b) it determines which borders of the image the line
+    intersects and the length (in pixels) of the slice.
+    :param a: slope of the linear line (y=ax+b)
+    :param b: intersect with the y-axis of the linear line (y=ax+b)
+    :param limits: image dimensions (x0, width, y0, height)
+    :return: absolute length of slice (l) and border intersects booleans (top, bot, left, right).
+
+    Note: line MUST intersects the image edges, otherwise it throws an error.
+    '''
+    # define booleans for the 4 image limit intersections.
     top, bot, left, right = False, False, False, False
-    w, h = limits[1], limits[3]
+    w, h = limits[1], limits[3]  # w = width, h = height
+    '''
+    Determining the intersections (assuming x,y=0,0 is bottom right).
+    Bottom: for y=0: 0<=x<=w --> y=0, 0<=(y-b)/a<=w --> 0<=-b/a<=w
+    Top: for y=h: 0<=x<=w --> y=h, 0<=(y-b)/a<=w --> 0<=(y-h)/a<=w
+    Left: for x=0: 0<=y<=h --> x=0, 0<=ax+b<=h --> 0<=b<=h
+    Right: for x=w: 0<=y<=h --> x=0, 0<=ax+b<=h --> 0<=a*w+b<=h
+    '''
     if -b / a >= 0 and -b / a <= w:
         bot = True
     if (h - b) / a >= 0 and (h - b) / a <= w:
@@ -16,11 +34,15 @@ def intersection_imageedge(a, b, limits):
         left = True
     if (a * w) + b >= 0 and (a * w) + b <= h:
         right = True
-    # print( top, bot, left, right)
-    if top + bot + left + right != 2:
+
+    if top + bot + left + right != 2:  # we must always have 2 intersects for a linear line
         logging.error("The profile should always intersect 2 image edges.")
         exit()
 
+    '''
+    Determining the slice length.
+    There are 6 possible intersections of the linear line with a rectangle.
+    '''
     if top & bot:  # case 1
         # l = imageheight / sin(theta), where theta = atan(a)
         # == > l = (sqrt(a ^ 2 + 1) * imageheight) / a
@@ -64,9 +86,12 @@ def coordinates_on_line(a, b, limits):
     :return: zipped list of (x, y) coordinates on this line
     '''
 
+    # Determine the slice length of the linear line with the image edges. This is needed because we need to know how
+    # many x coordinates we need to generate
     l, _ = intersection_imageedge(a, b, limits)
 
-    # generate x coordinates, keep as floats
+    # generate x coordinates, keep as floats (we might have floats x-coordinates), we later look for the closest x value
+    # in the image. For now we keep them as floats to determine the exact y-value.
     x = np.linspace(limits[0], limits[1]-1, int(l))
 
     # calculate corresponding y coordinates based on y=ax+b, keep as floats
