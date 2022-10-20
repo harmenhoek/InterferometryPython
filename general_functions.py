@@ -89,12 +89,12 @@ def get_timestamps(config, filenames):
         timestamps = []
         for f in filenames:
             # match = re.search(r"[0-9]{14}", f)  # we are looking for 14 digit number
-            match = re.search(config.getboolean("GENERAL", "FILE_TIMESTAMPFORMAT_RE"), f)  # we are looking for 14 digit number
+            match = re.search(config.get("GENERAL", "FILE_TIMESTAMPFORMAT_RE"), f)  # we are looking for 14 digit number
             if not match:
                 logging.error("No 14-digit timestamp found in filename.")
                 exit()
             try:
-                timestamps.append(datetime.strptime(match.group(0), config.getboolean("GENERAL", "FILE_TIMESTAMPFORMAT")))
+                timestamps.append(datetime.strptime(match.group(0), config.get("GENERAL", "FILE_TIMESTAMPFORMAT")))
             except:
                 logging.error("Could not obtain a %d%m%Y%H%M%S timestamp from the 14-digit number in filename.")
                 exit()
