@@ -59,7 +59,7 @@ def main():
     stats['inputFolder'] = inputFolder
     stats['inputImages'] = inputImages
     stats['inputImagesFullPath'] = inputImagesFullPath
-    stats['timestamps'] = timestamps
+    stats['timestamps'] = [datetime.strftime(timestamp, '%Y-%m-%d %H:%M:%S') for timestamp in timestamps]
     stats['deltatime'] = list(deltatime)
     stats['conversionFactorXY'] = conversionFactorXY
     stats['conversionFactorZ'] = conversionFactorZ
@@ -118,6 +118,7 @@ def main():
 
     stats['analysisTimeElapsed'] = time.time() - start_main
     # Save statistics
+    print(stats)
     with open(os.path.join(SaveFolder, f"{Proc}_statistics.json"), 'w') as f:
         json.dump(stats, f, indent=4)
 

@@ -215,7 +215,7 @@ def method_line(config, **kwargs):
         # get from config file if preferred
         P1 = [int(e.strip()) for e in config.get('LINE_METHOD', 'POINTA').split(',')]
         P2 = [int(e.strip()) for e in config.get('LINE_METHOD', 'POINTB').split(',')]
-        logging.warning(f"Coordinates for slice ({P1}, {P2}) are taken from config file.")
+        logging.info(f"Coordinates for slice ({P1}, {P2}) are taken from config file.")
 
     # get number of extra slices on each side of the center slice from config
     SliceWidth = config.getint("LINE_METHOD", "PARALLEL_SLICES_EXTENSION")
