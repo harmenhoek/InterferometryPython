@@ -56,6 +56,9 @@ def list_images(source):
         images = os.listdir(source)
         folder = source
     else:
+        if not os.path.exists(source):
+            logging.error(f"File {source} does not exist.")
+            exit()
         images = [os.path.basename(source)]
         folder = os.path.dirname(source)
     images = [img for img in images if

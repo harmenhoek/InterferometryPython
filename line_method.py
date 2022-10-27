@@ -92,14 +92,25 @@ def coordinates_on_line(a, b, limits):
 
     # generate x coordinates, keep as floats (we might have floats x-coordinates), we later look for the closest x value
     # in the image. For now we keep them as floats to determine the exact y-value.
-    x = np.linspace(limits[0], limits[1]-1, int(l))
+    # x should have length l. x_start and x_end are determined by where the line intersects the image border. There are
+    # 4 options for the xbounds: x=limits[0], x=limits[1], x=x(y=limits[2]) --> (x=limits[2]-b)/a, x=x(y=limits[3]) -->
+    # (x=limits[3]-b)/a.
+    # we calculate all 4 possible bounds, then check whether they are valid (within image limits).
+    xbounds = np.array([limits[0], limits[1], (limits[2]-b)/a, (limits[3]-b)/a])
+    # filter so that 0<=x<=w and 0<=y(x)<=h. we round to prevent strange errors (27-10-22)
+    xbounds = np.delete(xbounds, (np.where(
+        (xbounds < limits[0]) |
+        (xbounds > limits[1]) |
+        (np.round(a * xbounds + b) < limits[2]) |
+        (np.round(a * xbounds + b) > limits[3])
+    )))
+    if len(xbounds) != 2:
+        logging.error(f"Something went wrong in determining the x-coordinates for the image slice. {xbounds=}")
+        exit()
+    x = np.linspace(np.min(xbounds)+1, np.max(xbounds)-1, int(l))
 
     # calculate corresponding y coordinates based on y=ax+b, keep as floats
     y = (a * x + b)
-
-    # filtering is only needed for y, since x is by definition in the limits
-    x = np.delete(x, (np.where((y < limits[2]) | (y >= limits[3]))))  # filter x where y is out of bound
-    y = np.delete(y, (np.where((y < limits[2]) | (y >= limits[3]))))  # filter y where y is out of bound
 
     # return a zipped list of coordinates, thus integers
     return list(zip(x.astype(int), y.astype(int)))
@@ -202,9 +213,11 @@ def method_line(config, **kwargs):
 
     # get the points for the center linear slice
     if config.getboolean("LINE_METHOD", "SELECT_POINTS"):
+        print('Select 2 point one-by-one for the slice (points are not shown in the image window).')
         im_temp = image_resize(im_gray, height=800)
         resize_factor = 800 / im_gray.shape[0]
         cv2.imshow('image', im_temp)
+        cv2.setWindowTitle("image", "Slice selection window. Select 2 points for the slice.")
         cv2.setMouseCallback('image', click_event)
         cv2.waitKey(0)
         global right_clicks
@@ -240,6 +253,8 @@ def method_line(config, **kwargs):
         # transpose to account for coordinate system in plotting (reversed y)
         profiles[jdx] = [np.transpose(im_gray)[pnt] for pnt in coordinates]
 
+
+
     logging.info(f"All {SliceWidth*2+1} profiles are extracted from image.")
     # slices may have different lengths, and thus need to be aligned. We take the center of the image as the point to do
     # this. For each slice, we calculate the point (pixel) that is closest to this AlignmentPoint. We then make sure
@@ -247,7 +262,22 @@ def method_line(config, **kwargs):
     AlignmentPoint = (im_gray.shape[0] // 2, im_gray.shape[1] // 2)  # take center of image as alignment
     profiles_aligned = align_arrays(all_coordinates, profiles, AlignmentPoint)
 
+
+    # TODO filtering here to disregard datapoints (make nan) that have little statistical significance
+    def filter_profiles(profiles_aligned, profile):
+        nanValues = np.sum(np.isnan(profiles_aligned), axis=0)
+        profiles_aligned = profile[np.where(nanValues == 0)]
+        return profiles_aligned
+
+
     profile = np.nanmean(profiles_aligned, axis=0)
+
+    if config.getboolean("LINE_METHOD_ADVANCED", "FILTER_STARTEND"):
+        profile = filter_profiles(profiles_aligned, profile)
+
+
+
+
     logging.info("Profiles are aligned and average profile is determined.")
 
     profile_fft = np.fft.fft(profile)  # transform to fourier space

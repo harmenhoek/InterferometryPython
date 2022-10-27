@@ -146,7 +146,7 @@ def plot_unwrappedslice(config, unwrapped_object, profiles, conversionFactorXY, 
     fig = plt.figure(figsize=(8, 5))
     ax = fig.add_subplot(111)
     ax.imshow(profiles, cmap='gray', extent=np.array([0, conversionFactorXY*len(unwrapped_object), 0, np.max(unwrapped_object)]), aspect='auto')
-    ax.plot(np.linspace(0, conversionFactorXY*len(unwrapped_object), len(unwrapped_object)), unwrapped_object, label='unwrapped')
+    ax.plot(np.linspace(0, conversionFactorXY*len(unwrapped_object), len(unwrapped_object)), unwrapped_object, label='unwrapped', color='red')
     ax.set_xlabel(f'[{unitXY}]')
     ax.set_ylabel(f'[{unitZ}]')
     fig.tight_layout()
