@@ -39,7 +39,7 @@ def main():
     inputImages, inputFolder, inputImagesFullPath = list_images(config.get("GENERAL", "SOURCE"))
 
     # get timestamps of all frames and time difference between frames.
-    timestamps, deltatime = get_timestamps(config, inputImages)
+    timestamps, deltatime = get_timestamps(config, inputImages, inputImagesFullPath)
 
     # the surface_method has a simple-mode that if in use needs to set the advanced fourier settings in the config file
     if config.get('GENERAL', 'ANALYSIS_METHOD').lower() == 'surface':
@@ -76,41 +76,48 @@ def main():
     for idx, inputImage in enumerate(inputImages):
         start = time.time()  # start timer to calculate iteration time
         logging.info(f"{idx + 1}/{len(inputImages)} - Analyzing started.")
-
-        imagePath = os.path.join(inputFolder, inputImage)
-        im_gray, im_raw = image_preprocessing(config, imagePath)
-        logging.info(f"{idx + 1}/{len(inputImages)} - Pre-processing done.")
-
-        savename = f'{os.path.splitext(os.path.basename(imagePath))[0]}_analyzed_'
         stats['analysis'][idx] = {}
-        stats['analysis'][idx]['imagePath'] = imagePath
-        stats['analysis'][idx]['savename'] = savename
 
-        if config.get('GENERAL', 'ANALYSIS_METHOD').lower() == 'surface':
-            unwrapped_object = method_surface(config, im_gray=im_gray, conversionFactorXY=conversionFactorXY,
-                                              conversionFactorZ=conversionFactorZ, unitXY=unitXY, unitZ=unitZ,
-                                              SaveFolder=SaveFolder, savename=savename)
-        elif config.get('GENERAL', 'ANALYSIS_METHOD').lower() == 'line':
-            unwrapped_object = method_line(config, im_gray=im_gray, im_raw=im_raw,
-                                           conversionFactorXY=conversionFactorXY,
-                                           conversionFactorZ=conversionFactorZ, unitXY=unitXY, unitZ=unitZ,
-                                           SaveFolder=SaveFolder, savename=savename)
+        if config.get("GENERAL", "ANALYSIS_RANGE") == 'False' or idx % config.getint("GENERAL", "ANALYSIS_RANGE") == 0:
 
-        # Save unwrapped image = main result
-        wrappedPath = False
-        if config.getboolean("SAVING", "SAVE_UNWRAPPED_RAW"):
-            wrappedPath = os.path.join(SaveFolder, f"{savename}_unwrapped.npy")
-            with open(os.path.join(SaveFolder, f"{savename}_unwrapped.npy"), 'wb') as f:
-                np.save(f, unwrapped_object)
-            logging.info(f'Saved unwrapped image to file with filename {wrappedPath}')
+            imagePath = os.path.join(inputFolder, inputImage)
+            im_gray, im_raw = image_preprocessing(config, imagePath)
+            logging.info(f"{idx + 1}/{len(inputImages)} - Pre-processing done.")
 
-        stats['analysis'][idx]['wrappedPath'] = wrappedPath
+            savename = f'{os.path.splitext(os.path.basename(imagePath))[0]}_analyzed_'
+            stats['analysis'][idx]['imagePath'] = imagePath
+            stats['analysis'][idx]['savename'] = savename
+
+            if config.get('GENERAL', 'ANALYSIS_METHOD').lower() == 'surface':
+                unwrapped_object = method_surface(config, im_gray=im_gray, conversionFactorXY=conversionFactorXY,
+                                                  conversionFactorZ=conversionFactorZ, unitXY=unitXY, unitZ=unitZ,
+                                                  SaveFolder=SaveFolder, savename=savename)
+            elif config.get('GENERAL', 'ANALYSIS_METHOD').lower() == 'line':
+                unwrapped_object = method_line(config, im_gray=im_gray, im_raw=im_raw,
+                                               conversionFactorXY=conversionFactorXY,
+                                               conversionFactorZ=conversionFactorZ, unitXY=unitXY, unitZ=unitZ,
+                                               SaveFolder=SaveFolder, savename=savename)
+
+            # Save unwrapped image = main result
+            wrappedPath = False
+            if config.getboolean("SAVING", "SAVE_UNWRAPPED_RAW_NPY"):
+                wrappedPath = os.path.join(SaveFolder, f"{savename}_unwrapped.npy")
+                with open(os.path.join(SaveFolder, f"{savename}_unwrapped.npy"), 'wb') as f:
+                    np.save(f, unwrapped_object)
+                logging.info(f'Saved unwrapped image to file with filename {wrappedPath}')
+            if config.getboolean("SAVING", "SAVE_UNWRAPPED_RAW_CSV"):
+                wrappedPath = os.path.join(SaveFolder, f"{savename}_unwrapped.csv")
+                unwrapped_object.tofile(wrappedPath, sep=',')
+            if config.getboolean("PLOTTING", "SHOW_PLOTS"):
+                plt.show()
+
+            stats['analysis'][idx]['wrappedPath'] = wrappedPath
+
+            plt.close('all')
+        else:
+            logging.info("Image skipped by user setting.")
+
         stats['analysis'][idx]['timeElapsed'] = time.time() - start
-
-        if config.getboolean("PLOTTING", "SHOW_PLOTS"):
-            plt.show()
-
-        plt.close('all')
 
         timetracker.append(time.time() - start)  # add elapsed time to timetracker array
         TimeRemaining(timetracker,

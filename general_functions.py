@@ -69,7 +69,7 @@ def list_images(source):
             f"{datetime.now().strftime('%H:%M:%S')} No images with extension '.tiff', '.png', '.jpg', '.jpeg' or '.bmp' found in selected folder.")
     return natsorted(images), folder, [os.path.join(folder, i) for i in natsorted(images)]
 
-def get_timestamps(config, filenames):
+def get_timestamps(config, filenames, filenames_fullpath):
     '''
     For a given list of filenames, it extracts the datetime stamps from the filenames and determines the time difference
     in seconds between those timestamps. If TIMESTAMPS_FROMFILENAME is False, the set INPUT_FPS will be used to
@@ -83,7 +83,7 @@ def get_timestamps(config, filenames):
         GENERAL, FILE_TIMESTAMPFORMAT_RE    The regex pattern to look for in the filename
         GENERAL, FILE_TIMESTAMPFORMAT       The datetime format code in the regex pattern for conversion
         GENERAL, INPUT_FPS                  If TIMESTAMPS_FROMFILENAME is False, use fps to determine deltatime
-    :param filenames: list with filenames as strings
+    :param filenames: list with filenames as strings, filenames_fullpath: list with fill path filenames as strings
     :return: timestamps, deltatime
     '''
 
@@ -103,6 +103,13 @@ def get_timestamps(config, filenames):
                 exit()
         deltatime = timestamps_to_deltat(timestamps)
         logging.info("Timestamps read from filenames. Deltatime calculated based on timestamps.")
+    elif config.getboolean("GENERAL", "TIMESTAMPS_FROMCREATIONDATE"):
+        # read from creation date file property
+        timestamps = []
+        for f in filenames_fullpath:
+            timestamps.append(datetime.fromtimestamp(os.path.getctime(f)))
+        deltatime = timestamps_to_deltat(timestamps)
+        logging.info("Timestamps read from filenames. Deltatime calculated based on creation time.")
     else:
         timestamps = None
         deltatime = np.arange(0, len(filenames)) * config.getfloat("GENERAL", "INPUT_FPS")
