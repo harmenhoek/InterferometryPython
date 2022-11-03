@@ -7,7 +7,15 @@ Documentation last updated: 2022-09-29
 
 ## Getting started
 
-To get started, install all the packages from `requirements.txt`:
+To get started, create a virtual environment:
+```
+python3 -m venv /path/to/new/virtual/environment
+```
+Launch the venv: \
+Windows: `.\venv\Scripts\activate` \
+Unix: `source venv/bin/activate`
+
+Install all the packages from `requirements.txt`:
 ```
 pip install -r requirements.txt
 ```
