@@ -197,7 +197,7 @@ def conversion_factors(config):
     if unitZ == 'pi':
         conversionFactorZ = 1
     else:
-        conversionFactorZ = (config.getfloat('GENERAL', 'WAVELENGTH')) / (4 * config.getfloat('GENERAL', 'REFRACTIVE_INDEX'))  # 1 pi = lambda / (4n). this is conversion factor in pi --> m
+        conversionFactorZ = (config.getfloat('GENERAL', 'WAVELENGTH')) / (8 * config.getfloat('GENERAL', 'REFRACTIVE_INDEX'))  # 1 pi = lambda / (4n), 1/2 since we have units of 2pi. this is conversion factor in pi --> m
         if unitZ not in units:
             raise ValueError(f"Desired unit {unitZ} is not valid. Choose, nm, um, mm or m.")
         conversionFactorZ = conversionFactorZ * conversionsZ[units.index(unitZ)]  # apply unit conversion
