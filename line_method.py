@@ -269,7 +269,6 @@ def method_line(config, **kwargs):
         profiles_aligned = profile[np.where(nanValues == 0)]
         return profiles_aligned
 
-
     profile = np.nanmean(profiles_aligned, axis=0)
 
     if config.getboolean("LINE_METHOD_ADVANCED", "FILTER_STARTEND"):
@@ -299,7 +298,14 @@ def method_line(config, **kwargs):
     logging.info("Average profile is filtered in the Fourier space.")
 
 
+    # clahe = cv2.createCLAHE()
+    # profile_filtered = cv2.cvtColor(profile_filtered, cv2.COLOR_BGR2GRAY)
+    # profile_filtered = clahe.apply(profile_filtered)
+
     wrapped = np.arctan2(profile_filtered.imag, profile_filtered.real)
+
+
+
     unwrapped = np.unwrap(wrapped)
     logging.info("Average slice is wrapped and unwrapped")
 
@@ -310,7 +316,14 @@ def method_line(config, **kwargs):
     unwrapped_converted = unwrapped * conversionFactorZ
     logging.debug('Conversion factor for Z applied.')
 
-    # unwrapped = -unwrapped + np.max(unwrapped)
+    # # TODO TEMP
+    # from matplotlib import pyplot as plt
+    # fig, ax = plt.subplots()
+    # ax.plot(wrapped, '.-')
+    # fig2, ax2 = plt.subplots()
+    # ax2.plot(profile, '.-')
+    # plt.show()
+
 
     from plotting import plot_lineprocess, plot_profiles, plot_sliceoverlay, plot_unwrappedslice
     fig1 = plot_profiles(config, profiles_aligned)
