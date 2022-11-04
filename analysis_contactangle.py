@@ -37,12 +37,15 @@ class Highlighter(object):
         return mask
 
 
-procStatsJsonPath = r'C:\Users\HOEKHJ\Dev\InterferometryPython\export\PROC_20221103145006\PROC_20221103145006_statistics.json'
-csvPathAppend = r'csv'
+procStatsJsonPath = '/Users/harmenhoek/Dev/InterferometryPython/export/PROC_20221104130005/PROC_20221104130005_statistics.json'
+csvPathAppend = r''
 flipData = True
 
-analyzeImages = np.arange(41*4, 900, 4)
-analyzeImages = analyzeImages[3:4]
+# 1 slice: Contact angle = -1.6494950309356011 degrees.
+# 11 slices: -1.650786783947852 degrees.
+
+analyzeImages = np.array([0])
+
 
 with open(procStatsJsonPath, 'r') as f:
     procStats = json.load(f)
@@ -91,9 +94,10 @@ try:
         fig, ax = plt.subplots()
         ax.scatter(x, y)
         highlighter = Highlighter(ax, x, y)
-        plt.draw()
-        plt.waitforbuttonpress(0)  # this will wait for indefinite time
-        plt.close(fig)
+        plt.show()
+        # plt.draw()
+        # plt.waitforbuttonpress(0)  # this will wait for indefinite time
+        # plt.close(fig)
         selected_regions = highlighter.mask
         xrange1, yrange1 = x[selected_regions], y[selected_regions]
 

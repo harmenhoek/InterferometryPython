@@ -186,6 +186,7 @@ def conversion_factors(config):
         logging.info(f"Lens preset '{config.getfloat('LENS_PRESETS', config.get('GENERAL', 'LENS_PRESET'))}' is used.")
     except ValueError:
         logging.error(f"The set lens preset '{config.get('GENERAL', 'LENS_PRESET')}' is not in LENS_PRESETS.")
+        exit()
 
     unitXY = config.get('GENERAL', 'UNIT_XY')
     if unitXY not in units:
@@ -197,7 +198,7 @@ def conversion_factors(config):
     if unitZ == 'pi':
         conversionFactorZ = 1
     else:
-        conversionFactorZ = (config.getfloat('GENERAL', 'WAVELENGTH')) / (8 * config.getfloat('GENERAL', 'REFRACTIVE_INDEX'))  # 1 pi = lambda / (4n), 1/2 since we have units of 2pi. this is conversion factor in pi --> m
+        conversionFactorZ = (config.getfloat('GENERAL', 'WAVELENGTH')) / (2 * config.getfloat('GENERAL', 'REFRACTIVE_INDEX')) / (2 * np.pi)  # 1 period of 2pi = lambda / (4n). /2pi since our wrapped space is in absolute units, not pi
         if unitZ not in units:
             raise ValueError(f"Desired unit {unitZ} is not valid. Choose, nm, um, mm or m.")
         conversionFactorZ = conversionFactorZ * conversionsZ[units.index(unitZ)]  # apply unit conversion

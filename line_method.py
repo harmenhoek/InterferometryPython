@@ -5,6 +5,24 @@ import logging
 import os
 from general_functions import image_resize
 
+
+def normalize_wrappedspace(signal, threshold):
+    '''
+    Local normalization of the wrapped space. Since fringe pattern is never ideal (i.e. never runs between 0-1) due
+    to noise and averaging errors, the wrapped space doesn't run from -pi to pi, but somewhere inbetween. By setting
+    this value to True, the wrapped space is normalized from -pi to pi, if the stepsize is above a certain threshold.
+    :param signal: wrapped signal, i.e. stepped-wise signal between -pi and pi
+    :param threshold: if step is larger than this value, the neighboring peaks are pulled to -pi and pi. should be
+        0<Threshold<=2pi
+    :return: normalized signal
+    '''
+    # calculate differential. +0 since len(diff) = len(signal)-1
+    diff = np.append(np.diff(signal), 0)
+    # adjust peaks if outside of threshold
+    signal[diff > threshold] = np.pi
+    signal[np.where(diff > threshold)[0] - 1] = -np.pi
+    return signal
+
 def intersection_imageedge(a, b, limits):
     '''
     For a given image dimension (limits) and linear line (y=ax+b) it determines which borders of the image the line
@@ -262,7 +280,6 @@ def method_line(config, **kwargs):
     AlignmentPoint = (im_gray.shape[0] // 2, im_gray.shape[1] // 2)  # take center of image as alignment
     profiles_aligned = align_arrays(all_coordinates, profiles, AlignmentPoint)
 
-
     # TODO filtering here to disregard datapoints (make nan) that have little statistical significance
     def filter_profiles(profiles_aligned, profile):
         nanValues = np.sum(np.isnan(profiles_aligned), axis=0)
@@ -273,9 +290,6 @@ def method_line(config, **kwargs):
 
     if config.getboolean("LINE_METHOD_ADVANCED", "FILTER_STARTEND"):
         profile = filter_profiles(profiles_aligned, profile)
-
-
-
 
     logging.info("Profiles are aligned and average profile is determined.")
 
@@ -294,17 +308,18 @@ def method_line(config, **kwargs):
         # mask = smooth_step(mask, highPassBlur)
     profile_fft = profile_fft * mask
 
+
     profile_filtered = np.fft.ifft(profile_fft)
     logging.info("Average profile is filtered in the Fourier space.")
 
-
-    # clahe = cv2.createCLAHE()
-    # profile_filtered = cv2.cvtColor(profile_filtered, cv2.COLOR_BGR2GRAY)
-    # profile_filtered = clahe.apply(profile_filtered)
-
+    # calculate the wrapped space
     wrapped = np.arctan2(profile_filtered.imag, profile_filtered.real)
 
-
+    # local normalization of the wrapped space. Since fringe pattern is never ideal (i.e. never runs between 0-1) due
+    # to noise and averaging errors, the wrapped space doesn't run from -pi to pi, but somewhere inbetween. By setting
+    # this value to True, the wrapped space is normalized from -pi to pi, if the stepsize is above a certain threshold.
+    if config.getboolean("LINE_METHOD_ADVANCED", "NORMALIZE_WRAPPEDSPACE"):
+        wrapped = normalize_wrappedspace(wrapped, config.getfloat("LINE_METHOD_ADVANCED", "NORMALIZE_WRAPPEDSPACE_THRESHOLD"))
 
     unwrapped = np.unwrap(wrapped)
     logging.info("Average slice is wrapped and unwrapped")
@@ -316,20 +331,11 @@ def method_line(config, **kwargs):
     unwrapped_converted = unwrapped * conversionFactorZ
     logging.debug('Conversion factor for Z applied.')
 
-    # # TODO TEMP
-    # from matplotlib import pyplot as plt
-    # fig, ax = plt.subplots()
-    # ax.plot(wrapped, '.-')
-    # fig2, ax2 = plt.subplots()
-    # ax2.plot(profile, '.-')
-    # plt.show()
-
-
     from plotting import plot_lineprocess, plot_profiles, plot_sliceoverlay, plot_unwrappedslice
     fig1 = plot_profiles(config, profiles_aligned)
     fig2 = plot_lineprocess(config, profile, profile_filtered, wrapped, unwrapped)
     fig3 = plot_sliceoverlay(config, all_coordinates, im_raw)
-    fig4 = plot_unwrappedslice(config, unwrapped_converted, profiles_aligned, conversionFactorXY, unitXY, unitZ)
+    fig4 = plot_unwrappedslice(config, unwrapped_converted, profiles_aligned, conversionFactorXY, unitXY, unitZ, wrapped, unwrapped)
     logging.info(f"Plotting done.")
 
     # Saving

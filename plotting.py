@@ -142,12 +142,21 @@ def plot_sliceoverlay(config, coordinates, image):
     fig.tight_layout()
     return fig
 
-def plot_unwrappedslice(config, unwrapped_object, profiles, conversionFactorXY, unitXY, unitZ):
+def plot_unwrappedslice(config, unwrapped_object, profiles, conversionFactorXY, unitXY, unitZ, wrapped, unwrapped):
     fig = plt.figure(figsize=(8, 5))
     ax = fig.add_subplot(111)
-    ax.imshow(profiles, cmap='gray', extent=np.array([0, conversionFactorXY*len(unwrapped_object), 0, np.max(unwrapped_object)]), aspect='auto')
-    ax.plot(np.linspace(0, conversionFactorXY*len(unwrapped_object), len(unwrapped_object)), unwrapped_object, label='unwrapped', color='red')
+    # ax.imshow(profiles, cmap='gray', extent=np.array([0, conversionFactorXY*len(unwrapped_object), 0, np.max(unwrapped_object)]), aspect='auto')
+    ax.imshow(profiles, cmap='gray', extent=np.array([0, conversionFactorXY*len(unwrapped), 0, np.max(unwrapped)]), aspect='auto')
+    # ax.plot(np.linspace(0, conversionFactorXY*len(unwrapped_object), len(unwrapped_object)), unwrapped_object, label='unwrapped', color='red')
+    ax.plot(np.linspace(0, conversionFactorXY*len(unwrapped), len(unwrapped)), unwrapped , color='red')
     ax.set_xlabel(f'[{unitXY}]')
     ax.set_ylabel(f'[{unitZ}]')
+
+    # ax2 = ax.twinx()
+    # # ax2.plot(np.linspace(0, conversionFactorXY*len(profile), len(profile)), profile)
+    # ax2.plot(np.linspace(0, conversionFactorXY*len(wrapped), len(wrapped)), wrapped)
+
+    plt.xlim([1140, 1205])  # TODO TEMP
+
     fig.tight_layout()
     return fig
