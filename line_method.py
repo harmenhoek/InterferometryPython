@@ -335,7 +335,7 @@ def method_line(config, **kwargs):
     fig1 = plot_profiles(config, profiles_aligned)
     fig2 = plot_lineprocess(config, profile, profile_filtered, wrapped, unwrapped)
     fig3 = plot_sliceoverlay(config, all_coordinates, im_raw)
-    fig4 = plot_unwrappedslice(config, unwrapped_converted, profiles_aligned, conversionFactorXY, unitXY, unitZ, wrapped, unwrapped)
+    fig4 = plot_unwrappedslice(config, unwrapped_converted, profiles_aligned, conversionFactorXY, unitXY, unitZ)
     logging.info(f"Plotting done.")
 
     # Saving
