@@ -113,3 +113,7 @@ SOFTWARE.
 ## Work in progress
 - Slicing is not perfect. Parallel slices are sometimes 2pi apart. Alignment is terrible in some cases. Ideally we would want the option to automatically align the slices perpendicular to the fringes, and also align the slices close to the contact line.
 - More data validation. Develop algorithms to interpret the data and determine the validity of it. This includes data far away from the CL. If the contrast e.g. is too low here, or the fringes are too far away, we should ignore these datapoints.
+
+Small todos:
+- Don't save absolute paths in JSON, only relative
+- store data in subfolders
