@@ -232,8 +232,8 @@ def method_line(config, **kwargs):
     # get the points for the center linear slice
     if config.getboolean("LINE_METHOD", "SELECT_POINTS"):
         print('Select 2 point one-by-one for the slice (points are not shown in the image window).')
-        im_temp = image_resize(im_gray, height=800)
-        resize_factor = 800 / im_gray.shape[0]
+        im_temp = image_resize(im_gray, height=1200)
+        resize_factor = 1200 / im_gray.shape[0]
         cv2.imshow('image', im_temp)
         cv2.setWindowTitle("image", "Slice selection window. Select 2 points for the slice.")
         cv2.setMouseCallback('image', click_event)

@@ -14,10 +14,8 @@ def TimeRemaining(arraytimes, left):
         rem = f"Almost done now ..."
     elif timeremaining < 90:
         rem = f"{round(timeremaining)} seconds"
-    elif timeremaining < 3600:
-        rem = f"{round(timeremaining / 60)} minutes"
     else:
-        rem = f"{round(timeremaining / 3600)} hours"
+        rem = f"{round(timeremaining / 60)} minutes"
     logging.info(f"Estimated time remaining: {rem}")
     return True
 

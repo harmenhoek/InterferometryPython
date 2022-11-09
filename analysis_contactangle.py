@@ -8,6 +8,13 @@ import csv
 from matplotlib.widgets import RectangleSelector
 from datetime import datetime
 
+'''
+IMPORTANT
+
+THIS CODE IS STILL UNDOCUMENTED. USE WITH CARE.
+
+'''
+
 
 class Highlighter(object):
     def __init__(self, ax, x, y):
@@ -37,15 +44,16 @@ class Highlighter(object):
         return mask
 
 
-procStatsJsonPath = '/Users/harmenhoek/Dev/InterferometryPython/export/PROC_20221104130005/PROC_20221104130005_statistics.json'
+procStatsJsonPath = r'C:\Users\HOEKHJ\Dev\InterferometryPython\export\PROC_20221108193012\PROC_20221108193012_statistics.json'
+print(os.path.join(os.path.dirname(procStatsJsonPath), f"angleFittingData.csv"))
+
 csvPathAppend = r''
-flipData = True
+flipData = False
+analyzeImages = np.concatenate((np.arange(140, 160, 2), np.arange(160, 500, 10), np.arange(500, 914, 70)))
+# analyzeImages = np.array([100, 110])
 
 # 1 slice: Contact angle = -1.6494950309356011 degrees.
 # 11 slices: -1.650786783947852 degrees.
-
-analyzeImages = np.array([0])
-
 
 with open(procStatsJsonPath, 'r') as f:
     procStats = json.load(f)
@@ -72,13 +80,26 @@ data['csvPathAppend'] = csvPathAppend
 data['data'] = {}
 
 
-timeFromStart = procStats["deltatime"]
+deltaTime = procStats["deltatime"]
+timeFromStart = np.cumsum(deltaTime)
 
+# # Some extra stuff below here for fixing timestamps in post
+# my_str = ','.join(str(item) for item in timeFromStart[analyzeImages])
+# print(my_str)
+# timestamps = np.array(procStats['timestamps'])
+# timestamp_reference = datetime.strptime(timestamps[6], '%Y-%m-%d %H:%M:%S')
+# print(f"{timestamp_reference=}")
+# timestamps = timestamps[analyzeImages]
+# timestamps = [datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S') for timestamp in timestamps]
+# dt = [(timestamp - timestamp_reference).total_seconds() for timestamp in timestamps]
+# print(dt)
+# exit()
 
 angleDegAll = np.zeros_like(timeFromStart, dtype='float')
 
 try:
     for idx, imageNumber in enumerate(analyzeImages):
+        print(f'Analyzing image {idx}/{len(analyzeImages)}.')
         originalPath = procStats["analysis"][str(imageNumber)]["wrappedPath"]
         dataPath = os.path.join(os.path.dirname(originalPath), csvPathAppend, os.path.basename(originalPath))
         print(dataPath)
@@ -145,7 +166,7 @@ try:
         fig.savefig(os.path.join(os.path.dirname(originalPath), f"angleFitting_{os.path.splitext(os.path.basename(originalPath))[0]}.png"), dpi=300)
 
         data['data'][idx] = {}
-        data['data'][idx]['timeFromStart'] = timeFromStart[idx]
+        data['data'][idx]['timeFromStart'] = timeFromStart[imageNumber]
         data['data'][idx]['xrange1'] = xrange1.tolist()
         data['data'][idx]['yrange1'] = yrange1.tolist()
         # data['data'][idx]['xrange2'] = xrange2
@@ -164,11 +185,25 @@ try:
 except:
     print("Something went wrong, still saving data.")
 
-    with open(os.path.join(os.path.dirname(procStatsJsonPath), f"angleFittingData.csv"), 'w') as f:
-        json.dump(data, f, indent=4)
+with open(os.path.join(os.path.dirname(procStatsJsonPath), f"angleFittingData.json"), 'w') as f:
+    json.dump(data, f, indent=4)
 
+timeFromStart = np.array([data['data'][i]['timeFromStart'] for i in data['data']], dtype='float')
+angleDeg = np.array([data['data'][i]['angleDeg'] for i in data['data']], dtype='float')
+print(timeFromStart)
+print(angleDeg)
 
+np.savetxt(os.path.join(os.path.dirname(procStatsJsonPath), f"angleFittingData.csv"), np.vstack((timeFromStart, angleDeg)),
+           delimiter=',', fmt='%f', header=f'Dataset: {os.path.basename(originalPath)}, row 1 = Time from start '
+                                           f'(depositing drop) [s], row 2 = contact angle [deg] ')
 
+fig = plt.figure(figsize=(8, 5))
+ax = fig.add_subplot(111)
+ax.plot(timeFromStart, angleDeg, '.-')
+ax.set_xlabel(f'[Time from drop creation [s]')
+ax.set_ylabel(f'[Contact angle [deg]')
+fig.tight_layout()
+fig.savefig(os.path.join(os.path.dirname(procStatsJsonPath), f"angleFittingData.png"), dpi=300)
 
 
 
