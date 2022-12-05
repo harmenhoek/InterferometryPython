@@ -165,7 +165,8 @@ def method_surface(config, **kwargs):
     conversionFactorZ = kwargs['conversionFactorZ']
     unitXY = kwargs['unitXY']
     unitZ = kwargs['unitZ']
-    SaveFolder = kwargs['SaveFolder']
+    # SaveFolder = kwargs['SaveFolder']
+    Folders = kwargs['Folders']
     savename = kwargs['savename']
 
     im_filtered, im_fft, im_fft_filtered, roi = \
@@ -211,37 +212,37 @@ def method_surface(config, **kwargs):
     if config.getboolean("SAVING", "PLOT_SURFACEMETHOD_PROCESS"):
         fig1 = plot_process(im_fft, im_fft_filtered, im_gray, im_filtered, im_wrapped, im_unwrapped, roi)
         if SavePNG:
-            fig1.savefig(os.path.join(SaveFolder, f"process_{savename}.png"),
+            fig1.savefig(os.path.join(Folders['save_process'], f"process_{savename}.png"),
                          dpi=config.getint("SAVING", "SAVE_SETDPI"))
         if SavePDF:
-            fig1.savefig(os.path.join(SaveFolder, f"process_{savename}.pdf"),
+            fig1.savefig(os.path.join(Folders['save_process'], f"process_{savename}.pdf"),
                          dpi=config.getint("SAVING", "SAVE_SETDPI"))
 
     if config.getboolean("SAVING", "PLOT_SURFACEMETHOD_SURFACE"):
         fig2 = plot_surface(im_unwrapped, config, conversionFactorXY, unitXY, unitZ)
         if SavePNG:
-            fig2.savefig(os.path.join(SaveFolder, f"unwrapped3d_{savename}.png"),
+            fig2.savefig(os.path.join(Folders['save_unwrapped3d'], f"unwrapped3d_{savename}.png"),
                          dpi=config.getint("SAVING", "SAVE_SETDPI"))
         if SavePDF:
-            fig2.savefig(os.path.join(SaveFolder, f"unwrapped3d_{savename}.pdf"),
+            fig2.savefig(os.path.join(Folders['save_unwrapped3d'], f"unwrapped3d_{savename}.pdf"),
                          dpi=config.getint("SAVING", "SAVE_SETDPI"))
 
     if config.getboolean("SAVING", "PLOT_SURFACEMETHOD_WRAPPED"):
         fig3 = plot_imwrapped(im_wrapped, config, conversionFactorXY, unitXY)
         if SavePNG:
-            fig3.savefig(os.path.join(SaveFolder, f"wrapped_{savename}.png"),
+            fig3.savefig(os.path.join(Folders['save_wrapped'], f"wrapped_{savename}.png"),
                          dpi=config.getint("SAVING", "SAVE_SETDPI"))
         if SavePDF:
-            fig3.savefig(os.path.join(SaveFolder, f"wrapped_{savename}.pdf"),
+            fig3.savefig(os.path.join(Folders['save_wrapped'], f"wrapped_{savename}.pdf"),
                          dpi=config.getint("SAVING", "SAVE_SETDPI"))
 
     if config.getboolean("SAVING", "PLOT_SURFACEMETHOD_UNWRAPPED"):
         fig4 = plot_imunwrapped(im_unwrapped, config, conversionFactorXY, unitXY, unitZ)
         if SavePNG:
-            fig4.savefig(os.path.join(SaveFolder, f"unwrapped_{savename}.png"),
+            fig4.savefig(os.path.join(Folders['save_unwrapped'], f"unwrapped_{savename}.png"),
                          dpi=config.getint("SAVING", "SAVE_SETDPI"))
         if SavePDF:
-            fig4.savefig(os.path.join(SaveFolder, f"unwrapped_{savename}.pdf"),
+            fig4.savefig(os.path.join(Folders['save_unwrapped'], f"unwrapped_{savename}.pdf"),
                          dpi=config.getint("SAVING", "SAVE_SETDPI"))
 
     logging.info(f"Plotting (and saving) done.")

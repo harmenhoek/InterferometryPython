@@ -32,8 +32,8 @@ def main():
     config.read("config.ini")
 
     # create unique id (proc) for this analysis and create the folder structure if it does not exist yet
-    SaveFolder, Proc = check_outputfolder(config)
-    logging.info(f'Save folder created: {SaveFolder}. Process id: {Proc}.')
+    Folders, Proc = check_outputfolder(config)
+    logging.info(f'Save folder created: {Folders["savepath"]}. Process id: {Proc}.')
 
     # list all supported images (tiff, png, jpg, jpeg, bmp) if source is folder. If source is file, check if supported.
     inputImages, inputFolder, inputImagesFullPath = list_images(config.get("GENERAL", "SOURCE"))
@@ -54,7 +54,6 @@ def main():
     stats['About']['repo'] = str(git.Repo(search_parent_directories=True))
     stats['About']['sha'] = git.Repo(search_parent_directories=True).head.object.hexsha
     stats['startDateTime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f %z')
-    stats['SaveFolder'] = SaveFolder
     stats['Proc'] = Proc
     stats['inputFolder'] = inputFolder
     stats['inputImages'] = inputImages
@@ -91,22 +90,22 @@ def main():
             if config.get('GENERAL', 'ANALYSIS_METHOD').lower() == 'surface':
                 unwrapped_object = method_surface(config, im_gray=im_gray, conversionFactorXY=conversionFactorXY,
                                                   conversionFactorZ=conversionFactorZ, unitXY=unitXY, unitZ=unitZ,
-                                                  SaveFolder=SaveFolder, savename=savename)
+                                                  Folders=Folders, savename=savename)
             elif config.get('GENERAL', 'ANALYSIS_METHOD').lower() == 'line':
                 unwrapped_object = method_line(config, im_gray=im_gray, im_raw=im_raw,
                                                conversionFactorXY=conversionFactorXY,
                                                conversionFactorZ=conversionFactorZ, unitXY=unitXY, unitZ=unitZ,
-                                               SaveFolder=SaveFolder, savename=savename)
+                                               Folders=Folders, savename=savename)
 
             # Save unwrapped image = main result
             wrappedPath = False
             if config.getboolean("SAVING", "SAVE_UNWRAPPED_RAW_NPY"):
-                wrappedPath = os.path.join(SaveFolder, f"{savename}_unwrapped.npy")
-                with open(os.path.join(SaveFolder, f"{savename}_unwrapped.npy"), 'wb') as f:
+                wrappedPath = os.path.join(Folders['npy'], f"{savename}_unwrapped.npy")
+                with open(os.path.join(Folders['npy'], f"{savename}_unwrapped.npy"), 'wb') as f:
                     np.save(f, unwrapped_object)
                 logging.info(f'Saved unwrapped image to file with filename {wrappedPath}')
             if config.getboolean("SAVING", "SAVE_UNWRAPPED_RAW_CSV"):
-                wrappedPath = os.path.join(SaveFolder, f"{savename}_unwrapped.csv")
+                wrappedPath = os.path.join(Folders['csv'], f"{savename}_unwrapped.csv")
                 unwrapped_object.tofile(wrappedPath, sep=',')
             if config.getboolean("PLOTTING", "SHOW_PLOTS"):
                 plt.show()
@@ -124,15 +123,16 @@ def main():
                       len(inputImages) - idx)  # estimate remaining time based on average time per iteration and iterations left
         logging.info(f"{idx + 1}/{len(inputImages)} - Finished analyzing image.")
 
+    stats['Folders'] = Folders
     stats['analysisTimeElapsed'] = time.time() - start_main
     # Save statistics
-    with open(os.path.join(SaveFolder, f"{Proc}_statistics.json"), 'w') as f:
+    with open(os.path.join(Folders['save'], f"{Proc}_statistics.json"), 'w') as f:
         json.dump(stats, f, indent=4)
 
     # copy config file and add to export folder.
     if config.getboolean("SAVING", "SAVE_SETTINGS_TXT"):
-        stats['configPath'] = os.path.join(SaveFolder, f'config_{Proc}.ini')
-        with open(os.path.join(SaveFolder, f'config_{Proc}.ini'), 'w') as configfile:
+        stats['configPath'] = os.path.join(Folders['save'], f'config_{Proc}.ini')
+        with open(os.path.join(Folders['save'], f'config_{Proc}.ini'), 'w') as configfile:
             config.write(configfile)
 
     logging.info(f"Code finished in {round(time.time() - start_main)} seconds.")

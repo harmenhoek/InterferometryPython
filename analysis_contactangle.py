@@ -43,14 +43,23 @@ class Highlighter(object):
                 (self.y > y0) & (self.y < y1))
         return mask
 
+def find_nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return array[idx], idx
 
-procStatsJsonPath = r'C:\Users\HOEKHJ\Dev\InterferometryPython\export\PROC_20221108193012\PROC_20221108193012_statistics.json'
+
+procStatsJsonPath = r'C:\Users\HOEKHJ\Dev\InterferometryPython\export\PROC_20221202113132\PROC_20221202113132_statistics.json'
 print(os.path.join(os.path.dirname(procStatsJsonPath), f"angleFittingData.csv"))
 
 csvPathAppend = r''
 flipData = False
-analyzeImages = np.concatenate((np.arange(140, 160, 2), np.arange(160, 500, 10), np.arange(500, 914, 70)))
+# analyzeImages = np.concatenate((np.arange(140, 160, 2), np.arange(160, 500, 10), np.arange(500, 914, 70)))
 # analyzeImages = np.array([100, 110])
+
+
+
+
 
 # 1 slice: Contact angle = -1.6494950309356011 degrees.
 # 11 slices: -1.650786783947852 degrees.
@@ -75,13 +84,19 @@ with open(procStatsJsonPath, 'r') as f:
 data = {}
 data['jsonPath'] = procStatsJsonPath
 data['processDatetime'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-data['analyzeImages'] = ','.join(analyzeImages.astype(str))
 data['csvPathAppend'] = csvPathAppend
 data['data'] = {}
 
 
 deltaTime = procStats["deltatime"]
 timeFromStart = np.cumsum(deltaTime)
+
+analyzeTimes = np.linspace(0, 57604, 12)
+analyzeImages = np.array([find_nearest(timeFromStart, t)[1] for t in analyzeTimes])
+print(f"{analyzeTimes=}")
+print(f"{analyzeImages=}")
+data['analyzeImages'] = ','.join(analyzeImages.astype(str))
+
 
 # # Some extra stuff below here for fixing timestamps in post
 # my_str = ','.join(str(item) for item in timeFromStart[analyzeImages])

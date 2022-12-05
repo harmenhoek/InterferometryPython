@@ -226,7 +226,7 @@ def method_line(config, **kwargs):
     conversionFactorZ = kwargs['conversionFactorZ']
     unitXY = kwargs['unitXY']
     unitZ = kwargs['unitZ']
-    SaveFolder = kwargs['SaveFolder']
+    Folders = kwargs['Folders']
     savename = kwargs['savename']
 
     # get the points for the center linear slice
@@ -340,23 +340,23 @@ def method_line(config, **kwargs):
 
     # Saving
     if config.getboolean("SAVING", "SAVE_PNG"):
-        fig1.savefig(os.path.join(SaveFolder, f"rawslices_{savename}.png"),
+        fig1.savefig(os.path.join(Folders['save_rawslices'], f"rawslices_{savename}.png"),
                      dpi=config.getint("SAVING", "SAVE_SETDPI"))
-        fig2.savefig(os.path.join(SaveFolder, f"process_{savename}.png"),
+        fig2.savefig(os.path.join(Folders['save_process'], f"process_{savename}.png"),
                      dpi=config.getint("SAVING", "SAVE_SETDPI"))
-        fig3.savefig(os.path.join(SaveFolder, f"rawslicesimage_{savename}.png"),
+        fig3.savefig(os.path.join(Folders['save_rawslicesimage'], f"rawslicesimage_{savename}.png"),
                      dpi=config.getint("SAVING", "SAVE_SETDPI"))
-        fig4.savefig(os.path.join(SaveFolder, f"unwrapped_{savename}.png"),
+        fig4.savefig(os.path.join(Folders['save_unwrapped'], f"unwrapped_{savename}.png"),
                      dpi=config.getint("SAVING", "SAVE_SETDPI"))
         logging.debug('PNG saving done.')
     if config.getboolean("SAVING", "SAVE_PDF"):
-        fig1.savefig(os.path.join(SaveFolder, f"rawslices_{savename}.pdf"),
+        fig1.savefig(os.path.join(Folders['save_rawslices'], f"rawslices_{savename}.pdf"),
                      dpi=config.getint("SAVING", "SAVE_SETDPI"))
-        fig2.savefig(os.path.join(SaveFolder, f"process_{savename}.pdf"),
+        fig2.savefig(os.path.join(Folders['save_process'], f"process_{savename}.pdf"),
                      dpi=config.getint("SAVING", "SAVE_SETDPI"))
-        fig3.savefig(os.path.join(SaveFolder, f"rawslicesimage_{savename}.pdf"),
+        fig3.savefig(os.path.join(Folders['save_rawslicesimage'], f"rawslicesimage_{savename}.pdf"),
                      dpi=config.getint("SAVING", "SAVE_SETDPI"))
-        fig4.savefig(os.path.join(SaveFolder, f"unwrapped_{savename}.pdf"),
+        fig4.savefig(os.path.join(Folders['save_unwrapped'], f"unwrapped_{savename}.pdf"),
                      dpi=config.getint("SAVING", "SAVE_SETDPI"))
         logging.debug('PDF saving done.')
     logging.info(f"Saving done.")
