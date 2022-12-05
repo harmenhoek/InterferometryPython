@@ -37,6 +37,7 @@ def main():
 
     # list all supported images (tiff, png, jpg, jpeg, bmp) if source is folder. If source is file, check if supported.
     inputImages, inputFolder, inputImagesFullPath = list_images(config.get("GENERAL", "SOURCE"))
+    Folders['input'] = inputFolder
 
     # get timestamps of all frames and time difference between frames.
     timestamps, deltatime = get_timestamps(config, inputImages, inputImagesFullPath)
@@ -55,7 +56,6 @@ def main():
     stats['About']['sha'] = git.Repo(search_parent_directories=True).head.object.hexsha
     stats['startDateTime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f %z')
     stats['Proc'] = Proc
-    stats['inputFolder'] = inputFolder
     stats['inputImages'] = inputImages
     stats['inputImagesFullPath'] = inputImagesFullPath
     stats['timestamps'] = None if timestamps is None else \
@@ -85,6 +85,7 @@ def main():
 
             savename = f'{os.path.splitext(os.path.basename(imagePath))[0]}_analyzed_'
             stats['analysis'][idx]['imagePath'] = imagePath
+            stats['analysis'][idx]['imageName'] = os.path.basename(imagePath)
             stats['analysis'][idx]['savename'] = savename
 
             if config.get('GENERAL', 'ANALYSIS_METHOD').lower() == 'surface':
@@ -103,14 +104,15 @@ def main():
                 wrappedPath = os.path.join(Folders['npy'], f"{savename}_unwrapped.npy")
                 with open(os.path.join(Folders['npy'], f"{savename}_unwrapped.npy"), 'wb') as f:
                     np.save(f, unwrapped_object)
+                stats['analysis'][idx]['wrappedPath_npy'] = os.path.relpath(Folders['save'], wrappedPath)  # only return the relative path to main save folder
                 logging.info(f'Saved unwrapped image to file with filename {wrappedPath}')
             if config.getboolean("SAVING", "SAVE_UNWRAPPED_RAW_CSV"):
                 wrappedPath = os.path.join(Folders['csv'], f"{savename}_unwrapped.csv")
                 unwrapped_object.tofile(wrappedPath, sep=',')
+                stats['analysis'][idx]['wrappedPath_csv'] = os.path.relpath(Folders['save'], wrappedPath)  # only return the relative path to main save folder
+
             if config.getboolean("PLOTTING", "SHOW_PLOTS"):
                 plt.show()
-
-            stats['analysis'][idx]['wrappedPath'] = wrappedPath
 
             plt.close('all')
         else:
