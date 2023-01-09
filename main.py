@@ -104,12 +104,12 @@ def main():
                 wrappedPath = os.path.join(Folders['npy'], f"{savename}_unwrapped.npy")
                 with open(os.path.join(Folders['npy'], f"{savename}_unwrapped.npy"), 'wb') as f:
                     np.save(f, unwrapped_object)
-                stats['analysis'][idx]['wrappedPath_npy'] = os.path.relpath(Folders['save'], wrappedPath)  # only return the relative path to main save folder
+                stats['analysis'][idx]['wrappedPath_npy'] = os.path.relpath(wrappedPath, (Folders['save']))  # only return the relative path to main save folder
                 logging.info(f'Saved unwrapped image to file with filename {wrappedPath}')
-            if config.getboolean("SAVING", "SAVE_UNWRAPPED_RAW_CSV"):
+            if config.getboolean("SAVING", "SAVE_UNWRAPPED_RAW_CSV") and not config.get('GENERAL', 'ANALYSIS_METHOD').lower() == 'surface':
                 wrappedPath = os.path.join(Folders['csv'], f"{savename}_unwrapped.csv")
                 unwrapped_object.tofile(wrappedPath, sep=',')
-                stats['analysis'][idx]['wrappedPath_csv'] = os.path.relpath(Folders['save'], wrappedPath)  # only return the relative path to main save folder
+                stats['analysis'][idx]['wrappedPath_csv'] = os.path.relpath(wrappedPath, (Folders['save']))  # only return the relative path to main save folder
 
             if config.getboolean("PLOTTING", "SHOW_PLOTS"):
                 plt.show()

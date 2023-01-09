@@ -288,6 +288,7 @@ def method_line(config, **kwargs):
 
     profile = np.nanmean(profiles_aligned, axis=0)
 
+
     if config.getboolean("LINE_METHOD_ADVANCED", "FILTER_STARTEND"):
         profile = filter_profiles(profiles_aligned, profile)
 
@@ -321,6 +322,8 @@ def method_line(config, **kwargs):
     if config.getboolean("LINE_METHOD_ADVANCED", "NORMALIZE_WRAPPEDSPACE"):
         wrapped = normalize_wrappedspace(wrapped, config.getfloat("LINE_METHOD_ADVANCED", "NORMALIZE_WRAPPEDSPACE_THRESHOLD"))
 
+    np.savetxt(r"C:\Users\HOEKHJ\Dev\InterferometryPython\export\wrapped.csv", wrapped, delimiter=',', fmt='%f')
+
     unwrapped = np.unwrap(wrapped)
     logging.info("Average slice is wrapped and unwrapped")
 
@@ -330,6 +333,9 @@ def method_line(config, **kwargs):
 
     unwrapped_converted = unwrapped * conversionFactorZ
     logging.debug('Conversion factor for Z applied.')
+
+    np.savetxt(r"C:\Users\HOEKHJ\Dev\InterferometryPython\export\unwrapped.csv", unwrapped, delimiter=',', fmt='%f')
+    exit()
 
     from plotting import plot_lineprocess, plot_profiles, plot_sliceoverlay, plot_unwrappedslice
     fig1 = plot_profiles(config, profiles_aligned)

@@ -209,7 +209,7 @@ def method_surface(config, **kwargs):
     SavePNG = config.getboolean("SAVING", "SAVE_PNG")
     SavePDF = config.getboolean("SAVING", "SAVE_PDF")
 
-    if config.getboolean("SAVING", "PLOT_SURFACEMETHOD_PROCESS"):
+    if config.getboolean("PLOTTING", "PLOT_SURFACEMETHOD_PROCESS"):
         fig1 = plot_process(im_fft, im_fft_filtered, im_gray, im_filtered, im_wrapped, im_unwrapped, roi)
         if SavePNG:
             fig1.savefig(os.path.join(Folders['save_process'], f"process_{savename}.png"),
@@ -218,7 +218,7 @@ def method_surface(config, **kwargs):
             fig1.savefig(os.path.join(Folders['save_process'], f"process_{savename}.pdf"),
                          dpi=config.getint("SAVING", "SAVE_SETDPI"))
 
-    if config.getboolean("SAVING", "PLOT_SURFACEMETHOD_SURFACE"):
+    if config.getboolean("PLOTTING", "PLOT_SURFACEMETHOD_SURFACE"):
         fig2 = plot_surface(im_unwrapped, config, conversionFactorXY, unitXY, unitZ)
         if SavePNG:
             fig2.savefig(os.path.join(Folders['save_unwrapped3d'], f"unwrapped3d_{savename}.png"),
@@ -227,7 +227,7 @@ def method_surface(config, **kwargs):
             fig2.savefig(os.path.join(Folders['save_unwrapped3d'], f"unwrapped3d_{savename}.pdf"),
                          dpi=config.getint("SAVING", "SAVE_SETDPI"))
 
-    if config.getboolean("SAVING", "PLOT_SURFACEMETHOD_WRAPPED"):
+    if config.getboolean("PLOTTING", "PLOT_SURFACEMETHOD_WRAPPED"):
         fig3 = plot_imwrapped(im_wrapped, config, conversionFactorXY, unitXY)
         if SavePNG:
             fig3.savefig(os.path.join(Folders['save_wrapped'], f"wrapped_{savename}.png"),
@@ -236,7 +236,7 @@ def method_surface(config, **kwargs):
             fig3.savefig(os.path.join(Folders['save_wrapped'], f"wrapped_{savename}.pdf"),
                          dpi=config.getint("SAVING", "SAVE_SETDPI"))
 
-    if config.getboolean("SAVING", "PLOT_SURFACEMETHOD_UNWRAPPED"):
+    if config.getboolean("PLOTTING", "PLOT_SURFACEMETHOD_UNWRAPPED"):
         fig4 = plot_imunwrapped(im_unwrapped, config, conversionFactorXY, unitXY, unitZ)
         if SavePNG:
             fig4.savefig(os.path.join(Folders['save_unwrapped'], f"unwrapped_{savename}.png"),
