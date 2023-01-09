@@ -1,6 +1,7 @@
 images/
 export/
 todo.txt
+analysis_harmenhoek/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
