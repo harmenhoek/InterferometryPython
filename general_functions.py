@@ -117,7 +117,8 @@ def get_timestamps(config, filenames, filenames_fullpath):
         logging.info("Timestamps read from filenames. Deltatime calculated based on creation time.")
     else:
         timestamps = None
-        deltatime = np.arange(0, len(filenames)) * config.getfloat("GENERAL", "INPUT_FPS")
+        # deltatime = np.arange(0, len(filenames)) * config.getfloat("GENERAL", "INPUT_FPS")
+        deltatime = np.ones(len(filenames)) * config.getfloat("GENERAL", "INPUT_FPS")
         logging.warning("Deltatime calculated based on fps.")
 
     return timestamps, deltatime
